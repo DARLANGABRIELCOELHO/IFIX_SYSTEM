@@ -1,0 +1,1042 @@
+-- Criação das tabelas
+CREATE TABLE modelos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE servicos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE precos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    modelo_id INTEGER,
+    servico_id INTEGER,
+    preco_parcelado REAL,
+    preco_avista REAL,
+    FOREIGN KEY (modelo_id) REFERENCES modelos(id),
+    FOREIGN KEY (servico_id) REFERENCES servicos(id)
+);
+
+-- Inserir serviços
+INSERT INTO servicos (nome) VALUES 
+('TROCA DE TELA'),
+('TROCA DE BATERIA'),
+('VIDRO TRASEIRO'),
+('FACE ID'),
+('CONECTOR DE CARGA');
+
+-- Inserir modelos e preços
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    NULL,
+    NULL
+;
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 6S PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    150.00,
+    139.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 7'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    230.00,
+    213.90
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 7'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    180.00,
+    167.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 7'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 7'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 7'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    180.00,
+    167.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 7 PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    280.00,
+    260.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 7 PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    200.00,
+    186.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 7 PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 7 PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 7 PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    180.00,
+    167.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 8'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    230.00,
+    213.90
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 8'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    200.00,
+    186.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 8'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    250.00,
+    232.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 8'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 8'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    180.00,
+    167.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE SE 2'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    230.00,
+    213.90
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE SE 2'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    200.00,
+    186.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE SE 2'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    280.00,
+    260.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE SE 2'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE SE 2'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    180.00,
+    167.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 8 PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    280.00,
+    260.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 8 PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    230.00,
+    213.90
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 8 PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    280.00,
+    260.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 8 PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 8 PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    200.00,
+    186.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE X'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    480.00,
+    446.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE X'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    230.00,
+    213.90
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE X'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    300.00,
+    279.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE X'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    450.00,
+    430.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE X'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    220.00,
+    204.60
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE XS'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    450.00,
+    418.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE XS'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    230.00,
+    213.90
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE XS'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    300.00,
+    279.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE XS'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    450.00,
+    430.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE XS'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    220.00,
+    204.60
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE XS MAX'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    600.00,
+    558.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE XS MAX'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    300.00,
+    279.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE XS MAX'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    380.00,
+    353.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE XS MAX'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    450.00,
+    430.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE XS MAX'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    220.00,
+    204.60
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE XR'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    380.00,
+    353.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE XR'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    250.00,
+    232.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE XR'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    300.00,
+    279.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE XR'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    450.00,
+    430.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE XR'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    220.00,
+    204.60
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 11'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    330.00,
+    306.90
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 11'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    250.00,
+    232.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 11'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    350.00,
+    325.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 11'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    480.00,
+    450.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 11'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    220.00,
+    204.60
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 11 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    550.00,
+    511.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 11 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    280.00,
+    260.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 11 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    380.00,
+    353.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 11 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    480.00,
+    450.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 11 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    280.00,
+    260.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 11 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    600.00,
+    558.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 11 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    300.00,
+    279.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 11 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    400.00,
+    372.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 11 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    480.00,
+    450.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 11 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    300.00,
+    279.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 12'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    900.00,
+    837.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 12'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    350.00,
+    325.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 12'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    450.00,
+    418.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 12'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    550.00,
+    530.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 12'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    250.00,
+    232.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 12 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    900.00,
+    837.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 12 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    350.00,
+    325.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 12 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    450.00,
+    418.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 12 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    550.00,
+    530.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 12 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    250.00,
+    232.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 12 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    1100.00,
+    1023.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 12 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    380.00,
+    353.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 12 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    580.00,
+    539.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 12 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    580.00,
+    550.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 12 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    350.00,
+    325.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 13'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    1000.00,
+    930.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 13'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    350.00,
+    325.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 13'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    500.00,
+    465.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 13'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    700.00,
+    680.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 13'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    300.00,
+    279.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 13 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    1200.00,
+    1116.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 13 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    380.00,
+    353.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 13 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    550.00,
+    511.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 13 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    750.00,
+    730.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 13 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    300.00,
+    279.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 13 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    1400.00,
+    1302.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 13 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    400.00,
+    372.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 13 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    580.00,
+    539.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 13 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    750.00,
+    730.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 13 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    350.00,
+    325.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    1000.00,
+    930.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    380.00,
+    353.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    580.00,
+    539.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    750.00,
+    730.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    300.00,
+    279.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    1200.00,
+    1116.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    400.00,
+    372.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    630.00,
+    585.90
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    850.00,
+    830.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    300.00,
+    279.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    2200.00,
+    2046.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    430.00,
+    399.90
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    650.00,
+    604.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    850.00,
+    830.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    350.00,
+    325.50
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14 PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    1400.00,
+    1302.00
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14 PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14 PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14 PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 14 PLUS'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 15'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 15'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 15'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 15'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 15'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    380,
+    353.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 15 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 15 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 15 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 15 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 15 PRO'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    380,
+    353.40
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 15 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE TELA'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 15 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'TROCA DE BATERIA'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 15 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'VIDRO TRASEIRO'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 15 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'FACE ID'),
+    NULL,
+    NULL
+);
+
+INSERT OR REPLACE INTO precos (modelo_id, servico_id, preco_parcelado, preco_avista)       
+VALUES (
+    (SELECT id FROM modelos WHERE nome = 'IPHONE 15 PRO MAX'),
+    (SELECT id FROM servicos WHERE nome = 'CONECTOR DE CARGA'),
+    400,
+    372.00
+);

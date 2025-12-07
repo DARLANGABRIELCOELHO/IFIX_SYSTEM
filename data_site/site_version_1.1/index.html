@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <title>IFIX-consultor de preços</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #32284e, #1f2c2a);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .search-section {
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        select, .payment-options {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: white;
+            transition: border-color 0.3s;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #32284e;
+        }
+        
+        .payment-options {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 15px;
+        }
+        
+        .payment-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .payment-option input {
+            accent-color: #32284e;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .search-btn {
+            background-color: #32284e;
+            color: white;
+            flex: 2;
+        }
+        
+        .search-btn:hover {
+            background-color: #32284e;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(110, 69, 226, 0.2);
+        }
+        
+        .reset-btn {
+            background-color: #f0f0f0;
+            color: #333;
+            flex: 1;
+        }
+        
+        .reset-btn:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .results-section {
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .results-title {
+            font-size: 1.5rem;
+            color: #333;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .price-card {
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 5px solid #32284e;
+            transition: transform 0.3s;
+        }
+        
+        .price-card:hover {
+            transform: translateX(5px);
+        }
+        
+        .model-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1d1d1f;
+            margin-bottom: 10px;
+        }
+        
+        .service-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #32284e;
+            margin-bottom: 5px;
+        }
+        
+        .price-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        
+        .price {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1d1d1f;
+        }
+        
+        .payment-type {
+            font-size: 1rem;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .not-available {
+            color: #ff3b30;
+            font-weight: 600;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        th {
+            background-color: #32284e;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        tr:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .model-cell {
+            font-weight: 600;
+            background-color: #f5f5f7;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid #eee;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .filters {
+                grid-template-columns: 1fr;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .price-info {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Consulta de Preços - Reparo iPhone</h1>
+            <p class="subtitle">Pesquise os valores de conserto para diferentes modelos de iPhone</p>
+        </header>
+        
+        <section class="search-section">
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="model">Modelo do iPhone</label>
+                    <select id="model">
+                        <option value="">Todos os modelos</option>
+                        <option value="IPHONE 6">iPhone 6</option>
+                        <option value="IPHONE 6S">iPhone 6S</option>
+                        <option value="IPHONE 6S PLUS">iPhone 6S Plus</option>
+                        <option value="IPHONE 7">iPhone 7</option>
+                        <option value="IPHONE 7 PLUS">iPhone 7 Plus</option>
+                        <option value="IPHONE 8">iPhone 8</option>
+                        <option value="IPHONE 8 PLUS">iPhone 8 Plus</option>
+                        <option value="IPHONE X">iPhone X</option>
+                        <option value="IPHONE XS">iPhone XS</option>
+                        <option value="IPHONE XS MAX">iPhone XS Max</option>
+                        <option value="IPHONE XR">iPhone XR</option>
+                        <option value="IPHONE 11">iPhone 11</option>
+                        <option value="IPHONE 11 PRO">iPhone 11 Pro</option>
+                        <option value="IPHONE 11 PRO MAX">iPhone 11 Pro Max</option>
+                        <option value="IPHONE 12">iPhone 12</option>
+                        <option value="IPHONE 12 PRO">iPhone 12 Pro</option>
+                        <option value="IPHONE 12 PRO MAX">iPhone 12 Pro Max</option>
+                        <option value="IPHONE 13">iPhone 13</option>
+                        <option value="IPHONE 13 PRO">iPhone 13 Pro</option>
+                        <option value="IPHONE 13 PRO MAX">iPhone 13 Pro Max</option>
+                        <option value="IPHONE 14">iPhone 14</option>
+                        <option value="IPHONE 14 PRO">iPhone 14 Pro</option>
+                        <option value="IPHONE 14 PRO MAX">iPhone 14 Pro Max</option>
+                        <option value="IPHONE 15">iPhone 15</option>
+                        <option value="IPHONE 15 PRO">iPhone 15 Pro</option>
+                        <option value="IPHONE 15 PRO MAX">iPhone 15 Pro Max</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="service">Tipo de Serviço</label>
+                    <select id="service">
+                        <option value="">Todos os serviços</option>
+                        <option value="TROCA DE TELA">Troca de Tela</option>
+                        <option value="TROCA DE BATERIA">Troca de Bateria</option>
+                        <option value="VIDRO TRASEIRO">Vidro Traseiro</option>
+                        <option value="FACE ID">Face ID</option>
+                        <option value="CONECTOR DE CARGA">Conector de Carga</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Forma de Pagamento</label>
+                    <div class="payment-options">
+                        <div class="payment-option">
+                            <input type="radio" id="parcelado" name="payment" value="PARCELADO" checked>
+                            <label for="parcelado">Parcelado</label>
+                        </div>
+                        <div class="payment-option">
+                            <input type="radio" id="avista" name="payment" value="A VISTA">
+                            <label for="avista">À Vista</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="buttons">
+                <button class="search-btn" id="searchBtn">Pesquisar Preços</button>
+                <button class="reset-btn" id="resetBtn">Limpar Filtros</button>
+            </div>
+        </section>
+        
+        <section class="results-section">
+            <div class="results-header">
+                <h2 class="results-title">Resultados da Pesquisa</h2>
+                <div id="resultsCount">0 resultados encontrados</div>
+            </div>
+            
+            <div id="resultsContainer">
+                <div class="no-results">
+                    <p>Selecione um modelo e um serviço para ver os preços.</p>
+                    <p>Ou clique em "Pesquisar Preços" para ver todos os valores disponíveis.</p>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table id="fullTable" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Modelo</th>
+                            <th>Troca de Tela (Parcelado)</th>
+                            <th>Troca de Tela (À Vista)</th>
+                            <th>Troca de Bateria (Parcelado)</th>
+                            <th>Troca de Bateria (À Vista)</th>
+                            <th>Vidro Traseiro (Parcelado)</th>
+                            <th>Vidro Traseiro (À Vista)</th>
+                            <th>Face ID (Parcelado)</th>
+                            <th>Face ID (À Vista)</th>
+                            <th>Conector de Carga (Parcelado)</th>
+                            <th>Conector de Carga (À Vista)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Os dados da tabela serão inseridos aqui via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        <div class="footer">
+            <p>© 2023 Consulta de Preços para Reparo de iPhone. Os valores são meramente informativos e podem variar.</p>
+        </div>
+    </div>
+
+    <script>
+        // Dados extraídos da tabela HTML fornecida
+        const repairData = [
+            {modelo: "IPHONE 6", trocaTelaParcelado: "R$ 220,00", trocaTelaAvista: "R$ 204,60", trocaBateriaParcelado: "R$ 150,00", trocaBateriaAvista: "R$ 139,50", vidroTraseiroParcelado: "*", vidroTraseiroAvista: "#VALOR!", faceIdParcelado: "*", faceIdAvista: "*", conectorCargaParcelado: "*", conectorCargaAvista: "*"},
+            {modelo: "IPHONE 6S", trocaTelaParcelado: "R$ 220,00", trocaTelaAvista: "R$ 204,60", trocaBateriaParcelado: "R$ 150,00", trocaBateriaAvista: "R$ 139,50", vidroTraseiroParcelado: "*", vidroTraseiroAvista: "#VALOR!", faceIdParcelado: "*", faceIdAvista: "*", conectorCargaParcelado: "*", conectorCargaAvista: "*"},
+            {modelo: "IPHONE 6S PLUS", trocaTelaParcelado: "R$ 230,00", trocaTelaAvista: "R$ 213,90", trocaBateriaParcelado: "R$ 180,00", trocaBateriaAvista: "R$ 167,40", vidroTraseiroParcelado: "*", vidroTraseiroAvista: "#VALOR!", faceIdParcelado: "*", faceIdAvista: "*", conectorCargaParcelado: "*", conectorCargaAvista: "*"},
+            {modelo: "IPHONE 7", trocaTelaParcelado: "R$ 230,00", trocaTelaAvista: "R$ 213,90", trocaBateriaParcelado: "R$ 180,00", trocaBateriaAvista: "R$ 167,40", vidroTraseiroParcelado: "*", vidroTraseiroAvista: "#VALOR!", faceIdParcelado: "*", faceIdAvista: "*", conectorCargaParcelado: "*", conectorCargaAvista: "*"},
+            {modelo: "IPHONE 7 PLUS", trocaTelaParcelado: "R$ 280,00", trocaTelaAvista: "R$ 260,40", trocaBateriaParcelado: "R$ 200,00", trocaBateriaAvista: "R$ 186,00", vidroTraseiroParcelado: "*", vidroTraseiroAvista: "#VALOR!", faceIdParcelado: "*", faceIdAvista: "*", conectorCargaParcelado: "*", conectorCargaAvista: "*"},
+            {modelo: "IPHONE 8", trocaTelaParcelado: "R$ 280,00", trocaTelaAvista: "R$ 260,40", trocaBateriaParcelado: "R$ 200,00", trocaBateriaAvista: "R$ 186,00", vidroTraseiroParcelado: "R$ 250,00", vidroTraseiroAvista: "R$ 232,50", faceIdParcelado: "*", faceIdAvista: "*", conectorCargaParcelado: "*", conectorCargaAvista: "*"},
+            {modelo: "IPHONE 8 PLUS", trocaTelaParcelado: "R$ 280,00", trocaTelaAvista: "R$ 260,40", trocaBateriaParcelado: "R$ 230,00", trocaBateriaAvista: "R$ 213,90", vidroTraseiroParcelado: "R$ 280,00", vidroTraseiroAvista: "R$ 260,40", faceIdParcelado: "*", faceIdAvista: "*", conectorCargaParcelado: "*", conectorCargaAvista: "*"},
+            {modelo: "IPHONE X", trocaTelaParcelado: "R$ 480,00", trocaTelaAvista: "R$ 446,40", trocaBateriaParcelado: "R$ 230,00", trocaBateriaAvista: "R$ 213,90", vidroTraseiroParcelado: "R$ 300,00", vidroTraseiroAvista: "R$ 279,00", faceIdParcelado: "R$ 450,00", faceIdAvista: "R$ 430,00", conectorCargaParcelado: "R$ 450,00", conectorCargaAvista: "R$ 430,00"},
+            {modelo: "IPHONE XS", trocaTelaParcelado: "R$ 450,00", trocaTelaAvista: "R$ 418,50", trocaBateriaParcelado: "R$ 230,00", trocaBateriaAvista: "R$ 213,90", vidroTraseiroParcelado: "R$ 300,00", vidroTraseiroAvista: "R$ 279,00", faceIdParcelado: "R$ 450,00", faceIdAvista: "R$ 430,00", conectorCargaParcelado: "R$ 450,00", conectorCargaAvista: "R$ 430,00"},
+            {modelo: "IPHONE XS MAX", trocaTelaParcelado: "R$ 600,00", trocaTelaAvista: "R$ 558,00", trocaBateriaParcelado: "R$ 300,00", trocaBateriaAvista: "R$ 279,00", vidroTraseiroParcelado: "R$ 380,00", vidroTraseiroAvista: "R$ 353,40", faceIdParcelado: "R$ 450,00", faceIdAvista: "R$ 430,00", conectorCargaParcelado: "R$ 450,00", conectorCargaAvista: "R$ 430,00"},
+            {modelo: "IPHONE XR", trocaTelaParcelado: "R$ 380,00", trocaTelaAvista: "R$ 353,40", trocaBateriaParcelado: "R$ 250,00", trocaBateriaAvista: "R$ 232,50", vidroTraseiroParcelado: "R$ 300,00", vidroTraseiroAvista: "R$ 279,00", faceIdParcelado: "R$ 450,00", faceIdAvista: "R$ 430,00", conectorCargaParcelado: "R$ 450,00", conectorCargaAvista: "R$ 430,00"},
+            {modelo: "IPHONE 11", trocaTelaParcelado: "R$ 330,00", trocaTelaAvista: "R$ 306,90", trocaBateriaParcelado: "R$ 250,00", trocaBateriaAvista: "R$ 232,50", vidroTraseiroParcelado: "R$ 350,00", vidroTraseiroAvista: "R$ 325,50", faceIdParcelado: "R$ 480,00", faceIdAvista: "R$ 450,00", conectorCargaParcelado: "R$ 480,00", conectorCargaAvista: "R$ 450,00"},
+            {modelo: "IPHONE 11 PRO", trocaTelaParcelado: "R$ 550,00", trocaTelaAvista: "R$ 511,50", trocaBateriaParcelado: "*", trocaBateriaAvista: "#VALOR!", vidroTraseiroParcelado: "R$ 380,00", vidroTraseiroAvista: "R$ 353,40", faceIdParcelado: "R$ 480,00", faceIdAvista: "R$ 450,00", conectorCargaParcelado: "R$ 480,00", conectorCargaAvista: "R$ 450,00"},
+            {modelo: "IPHONE 11 PRO MAX", trocaTelaParcelado: "R$ 600,00", trocaTelaAvista: "R$ 558,00", trocaBateriaParcelado: "*", trocaBateriaAvista: "#VALOR!", vidroTraseiroParcelado: "R$ 400,00", vidroTraseiroAvista: "R$ 372,00", faceIdParcelado: "R$ 480,00", faceIdAvista: "R$ 450,00", conectorCargaParcelado: "R$ 480,00", conectorCargaAvista: "R$ 450,00"},
+            {modelo: "IPHONE 12", trocaTelaParcelado: "R$ 850,00", trocaTelaAvista: "R$ 790,50", trocaBateriaParcelado: "R$ 600,00", trocaBateriaAvista: "R$ 558,00", vidroTraseiroParcelado: "R$ 450,00", vidroTraseiroAvista: "R$ 418,50", faceIdParcelado: "R$ 550,00", faceIdAvista: "R$ 530,00", conectorCargaParcelado: "R$ 550,00", conectorCargaAvista: "R$ 530,00"},
+            {modelo: "IPHONE 12 PRO", trocaTelaParcelado: "R$ 850,00", trocaTelaAvista: "R$ 790,50", trocaBateriaParcelado: "R$ 600,00", trocaBateriaAvista: "R$ 558,00", vidroTraseiroParcelado: "R$ 450,00", vidroTraseiroAvista: "R$ 418,50", faceIdParcelado: "R$ 550,00", faceIdAvista: "R$ 530,00", conectorCargaParcelado: "R$ 550,00", conectorCargaAvista: "R$ 530,00"},
+            {modelo: "IPHONE 12 PRO MAX", trocaTelaParcelado: "R$ 950,00", trocaTelaAvista: "R$ 883,50", trocaBateriaParcelado: "R$ 400,00", trocaBateriaAvista: "R$ 372,00", vidroTraseiroParcelado: "R$ 580,00", vidroTraseiroAvista: "R$ 539,40", faceIdParcelado: "R$ 580,00", faceIdAvista: "R$ 550,00", conectorCargaParcelado: "R$ 580,00", conectorCargaAvista: "R$ 550,00"},
+            {modelo: "IPHONE 13", trocaTelaParcelado: "*", trocaTelaAvista: "#VALOR!", trocaBateriaParcelado: "*", trocaBateriaAvista: "#VALOR!", vidroTraseiroParcelado: "R$ 500,00", vidroTraseiroAvista: "R$ 465,00", faceIdParcelado: "R$ 700,00", faceIdAvista: "R$ 680,00", conectorCargaParcelado: "R$ 700,00", conectorCargaAvista: "R$ 680,00"},
+            {modelo: "IPHONE 13 PRO", trocaTelaParcelado: "*", trocaTelaAvista: "#VALOR!", trocaBateriaParcelado: "*", trocaBateriaAvista: "#VALOR!", vidroTraseiroParcelado: "R$ 550,00", vidroTraseiroAvista: "R$ 511,50", faceIdParcelado: "R$ 750,00", faceIdAvista: "R$ 730,00", conectorCargaParcelado: "R$ 750,00", conectorCargaAvista: "R$ 730,00"},
+            {modelo: "IPHONE 13 PRO MAX", trocaTelaParcelado: "*", trocaTelaAvista: "#VALOR!", trocaBateriaParcelado: "*", trocaBateriaAvista: "#VALOR!", vidroTraseiroParcelado: "R$ 580,00", vidroTraseiroAvista: "R$ 539,40", faceIdParcelado: "R$ 750,00", faceIdAvista: "R$ 730,00", conectorCargaParcelado: "R$ 750,00", conectorCargaAvista: "R$ 730,00"},
+            {modelo: "IPHONE 14", trocaTelaParcelado: "*", trocaTelaAvista: "#VALOR!", trocaBateriaParcelado: "*", trocaBateriaAvista: "#VALOR!", vidroTraseiroParcelado: "R$ 580,00", vidroTraseiroAvista: "R$ 539,40", faceIdParcelado: "R$ 750,00", faceIdAvista: "R$ 730,00", conectorCargaParcelado: "R$ 750,00", conectorCargaAvista: "R$ 730,00"},
+            {modelo: "IPHONE 14 PRO", trocaTelaParcelado: "*", trocaTelaAvista: "#VALOR!", trocaBateriaParcelado: "*", trocaBateriaAvista: "#VALOR!", vidroTraseiroParcelado: "R$ 630,00", vidroTraseiroAvista: "R$ 585,90", faceIdParcelado: "R$ 850,00", faceIdAvista: "R$ 830,00", conectorCargaParcelado: "R$ 850,00", conectorCargaAvista: "R$ 830,00"},
+            {modelo: "IPHONE 14 PRO MAX", trocaTelaParcelado: "*", trocaTelaAvista: "#VALOR!", trocaBateriaParcelado: "*", trocaBateriaAvista: "#VALOR!", vidroTraseiroParcelado: "R$ 650,00", vidroTraseiroAvista: "R$ 604,50", faceIdParcelado: "R$ 850,00", faceIdAvista: "R$ 830,00", conectorCargaParcelado: "R$ 850,00", conectorCargaAvista: "R$ 830,00"},
+            {modelo: "IPHONE 15", trocaTelaParcelado: "*", trocaTelaAvista: "#VALOR!", trocaBateriaParcelado: "*", trocaBateriaAvista: "#VALOR!", vidroTraseiroParcelado: "*", vidroTraseiroAvista: "#VALOR!", faceIdParcelado: "*", faceIdAvista: "*", conectorCargaParcelado: "*", conectorCargaAvista: "*"},
+            {modelo: "IPHONE 15 PRO", trocaTelaParcelado: "*", trocaTelaAvista: "#VALOR!", trocaBateriaParcelado: "*", trocaBateriaAvista: "#VALOR!", vidroTraseiroParcelado: "*", vidroTraseiroAvista: "#VALOR!", faceIdParcelado: "*", faceIdAvista: "*", conectorCargaParcelado: "*", conectorCargaAvista: "*"},
+            {modelo: "IPHONE 15 PRO MAX", trocaTelaParcelado: "*", trocaTelaAvista: "#VALOR!", trocaBateriaParcelado: "*", trocaBateriaAvista: "#VALOR!", vidroTraseiroParcelado: "*", vidroTraseiroAvista: "#VALOR!", faceIdParcelado: "*", faceIdAvista: "*", conectorCargaParcelado: "*", conectorCargaAvista: "*"}
+        ];
+
+        // Mapeamento de serviços para propriedades dos dados
+        const serviceMapping = {
+            "TROCA DE TELA": {
+                parcelado: "trocaTelaParcelado",
+                avista: "trocaTelaAvista"
+            },
+            "TROCA DE BATERIA": {
+                parcelado: "trocaBateriaParcelado",
+                avista: "trocaBateriaAvista"
+            },
+            "VIDRO TRASEIRO": {
+                parcelado: "vidroTraseiroParcelado",
+                avista: "vidroTraseiroAvista"
+            },
+            "FACE ID": {
+                parcelado: "faceIdParcelado",
+                avista: "faceIdAvista"
+            },
+            "CONECTOR DE CARGA": {
+                parcelado: "conectorCargaParcelado",
+                avista: "conectorCargaAvista"
+            }
+        };
+
+        // Elementos DOM
+        const modelSelect = document.getElementById('model');
+        const serviceSelect = document.getElementById('service');
+        const searchBtn = document.getElementById('searchBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const resultsCount = document.getElementById('resultsCount');
+        const fullTable = document.getElementById('fullTable');
+        const tableBody = document.getElementById('tableBody');
+
+        // Inicializar a tabela completa
+        function initializeFullTable() {
+            tableBody.innerHTML = '';
+            
+            repairData.forEach(item => {
+                const row = document.createElement('tr');
+                
+                // Célula do modelo
+                const modelCell = document.createElement('td');
+                modelCell.textContent = item.modelo;
+                modelCell.className = 'model-cell';
+                row.appendChild(modelCell);
+                
+                // Adicionar células para cada serviço
+                const services = ['trocaTela', 'trocaBateria', 'vidroTraseiro', 'faceId', 'conectorCarga'];
+                
+                services.forEach(service => {
+                    // Célula para preço parcelado
+                    const parceladoCell = document.createElement('td');
+                    parceladoCell.textContent = item[`${service}Parcelado`];
+                    if (item[`${service}Parcelado`] === '*' || item[`${service}Parcelado`] === '#VALOR!') {
+                        parceladoCell.className = 'not-available';
+                    }
+                    row.appendChild(parceladoCell);
+                    
+                    // Célula para preço à vista
+                    const avistaCell = document.createElement('td');
+                    avistaCell.textContent = item[`${service}Avista`];
+                    if (item[`${service}Avista`] === '*' || item[`${service}Avista`] === '#VALOR!') {
+                        avistaCell.className = 'not-available';
+                    }
+                    row.appendChild(avistaCell);
+                });
+                
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Função para pesquisar preços
+        function searchPrices() {
+            const selectedModel = modelSelect.value;
+            const selectedService = serviceSelect.value;
+            const paymentType = document.querySelector('input[name="payment"]:checked').value;
+            
+            // Filtrar os dados
+            let filteredData = repairData;
+            
+            if (selectedModel) {
+                filteredData = filteredData.filter(item => item.modelo === selectedModel);
+            }
+            
+            // Exibir resultados
+            resultsContainer.innerHTML = '';
+            
+            if (filteredData.length === 0) {
+                resultsContainer.innerHTML = '<div class="no-results"><p>Nenhum resultado encontrado para os filtros selecionados.</p></div>';
+                resultsCount.textContent = '0 resultados encontrados';
+                fullTable.style.display = 'none';
+                return;
+            }
+            
+            let resultCount = 0;
+            
+            if (selectedService) {
+                // Mostrar apenas o serviço selecionado
+                filteredData.forEach(item => {
+                    const serviceKey = serviceMapping[selectedService];
+                    const price = paymentType === 'PARCELADO' ? 
+                        item[serviceKey.parcelado] : item[serviceKey.avista];
+                    
+                    if (price && price !== '*' && price !== '#VALOR!') {
+                        displayResult(item.modelo, selectedService, price, paymentType);
+                        resultCount++;
+                    }
+                });
+                
+                if (resultCount === 0) {
+                    resultsContainer.innerHTML = `
+                        <div class="no-results">
+                            <p>Nenhum preço disponível para o serviço selecionado.</p>
+                            <p>Tente alterar o modelo ou o tipo de pagamento.</p>
+                        </div>
+                    `;
+                }
+                
+                resultsCount.textContent = `${resultCount} resultado(s) encontrado(s)`;
+                fullTable.style.display = 'none';
+            } else {
+                // Mostrar tabela completa
+                fullTable.style.display = 'table';
+                resultsCount.textContent = `${filteredData.length} modelo(s) encontrado(s)`;
+            }
+        }
+
+        // Função para exibir um resultado individual
+        function displayResult(model, service, price, paymentType) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'price-card';
+            
+            const serviceNames = {
+                "TROCA DE TELA": "Troca de Tela",
+                "TROCA DE BATERIA": "Troca de Bateria", 
+                "VIDRO TRASEIRO": "Vidro Traseiro",
+                "FACE ID": "Face ID",
+                "CONECTOR DE CARGA": "Conector de Carga"
+            };
+            
+            const paymentNames = {
+                "PARCELADO": "Parcelado",
+                "A VISTA": "À Vista"
+            };
+            
+            resultDiv.innerHTML = `
+                <div class="model-name">${model}</div>
+                <div class="service-name">${serviceNames[service]}</div>
+                <div class="price-info">
+                    <div>
+                        <div class="price">${price}</div>
+                        <div class="payment-type">${paymentNames[paymentType]}</div>
+                    </div>
+                    <div>
+                        <button class="search-btn" style="padding: 8px 16px; font-size: 14px;" onclick="showAllServices('${model}')">Ver todos os serviços</button>
+                    </div>
+                </div>
+            `;
+            
+            resultsContainer.appendChild(resultDiv);
+        }
+
+        // Função para mostrar todos os serviços de um modelo
+        function showAllServices(model) {
+            const modelData = repairData.find(item => item.modelo === model);
+            
+            if (!modelData) return;
+            
+            // Selecionar o modelo no dropdown
+            modelSelect.value = model;
+            serviceSelect.value = '';
+            
+            // Mostrar tabela completa
+            fullTable.style.display = 'table';
+            resultsCount.textContent = `Mostrando todos os serviços para ${model}`;
+            
+            // Rolar para a tabela
+            fullTable.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Função para resetar os filtros
+        function resetFilters() {
+            modelSelect.value = '';
+            serviceSelect.value = '';
+            document.getElementById('parcelado').checked = true;
+            
+            resultsContainer.innerHTML = '<div class="no-results"><p>Selecione um modelo e um serviço para ver os preços.</p><p>Ou clique em "Pesquisar Preços" para ver todos os valores disponíveis.</p></div>';
+            resultsCount.textContent = '0 resultados encontrados';
+            fullTable.style.display = 'none';
+        }
+
+        // Inicializar a tabela completa
+        initializeFullTable();
+
+        // Event listeners
+        searchBtn.addEventListener('click', searchPrices);
+        resetBtn.addEventListener('click', resetFilters);
+
+        // Permitir pesquisa com Enter
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                searchPrices();
+            }
+        });
+
+        // Expor função para uso global
+        window.showAllServices = showAllServices;
+    </script>
+</body>
+</html>
