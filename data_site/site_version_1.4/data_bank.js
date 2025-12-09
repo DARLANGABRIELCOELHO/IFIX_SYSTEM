@@ -1,6 +1,6 @@
-loadDatabase() {
-    // Dados completos da planilha - CORRIGIDOS
-    this.models = [
+// Banco de dados de preços para iPhone
+window.phoneData = {
+    models: [
         "IPHONE 6",
         "IPHONE 6 PLUS",
         "IPHONE 6S", 
@@ -36,18 +36,17 @@ loadDatabase() {
         "IPHONE 15 PLUS",
         "IPHONE 15 PRO",
         "IPHONE 15 PRO MAX"
-    ];
+    ],
     
-    this.services = [
+    services: [
         "TROCA DE TELA",
         "TROCA DE BATERIA", 
         "VIDRO TRASEIRO",
         "FACE ID",
         "CONECTOR DE CARGA"
-    ];
+    ],
     
-    // Preços completos CORRIGIDOS - todos os valores parcelados formatados
-    this.prices = {
+    prices: {
         "IPHONE 6": {
             "TROCA DE TELA": { parcelado: "R$ 220,00", avista: "R$ 204,60" },
             "TROCA DE BATERIA": { parcelado: "R$ 150,00", avista: "R$ 139,50" },
@@ -293,7 +292,5 @@ loadDatabase() {
             "FACE ID": { parcelado: "R$ 950,00", avista: "R$ 930,00" },
             "CONECTOR DE CARGA": { parcelado: "R$ 400,00", avista: "R$ 372,00" }
         }
-    };
-    
-    this.initSelects();
-}
+    }
+};

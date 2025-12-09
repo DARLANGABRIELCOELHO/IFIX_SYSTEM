@@ -1,15 +1,18 @@
-// Banco de dados SQLite em memória com todos os dados da planilha
-// Dados importados do data_bank.js
+// app.js - Aplicação principal
 
 class RepairPriceApp {
     constructor() {
-        this.models = [];
-        this.services = [];
-        this.prices = {};
+        this.models = phoneData.models || [];
+        this.services = phoneData.services || [];
+        this.prices = phoneData.prices || {};
         
         this.initializeElements();
-        this.loadDatabase();
+        this.initSelects();
         this.setupEventListeners();
+        
+        // Inicializar com mensagem padrão
+        this.resultsContainer.innerHTML = '<p>Selecione filtros para visualizar os valores.</p>';
+        this.resultsCount.textContent = '0 resultados';
     }
     
     initializeElements() {
@@ -23,71 +26,35 @@ class RepairPriceApp {
         this.tableContainer = document.getElementById('tableContainer');
     }
     
-    loadDatabase() {
-        // Importar dados do data_bank.js
-        if (typeof window.phoneData !== 'undefined') {
-            this.models = window.phoneData.models;
-            this.services = window.phoneData.services;
-            this.prices = window.phoneData.prices;
-            this.initSelects();
-        } else {
-            console.error("Dados não carregados. Verifique se data_bank.js foi incluído antes de app.js");
-            // Fallback para dados mínimos caso o data_bank.js não esteja disponível
-            this.loadFallbackData();
-        }
-    }
-    
-    loadFallbackData() {
-        // Dados mínimos de fallback
-        this.models = ["IPHONE 6", "IPHONE 7", "IPHONE 8"];
-        this.services = ["TROCA DE TELA", "TROCA DE BATERIA"];
-        this.prices = {
-            "IPHONE 6": {
-                "TROCA DE TELA": { parcelado: "R$ 220,00", avista: "R$ 204,60" },
-                "TROCA DE BATERIA": { parcelado: "R$ 150,00", avista: "R$ 139,50" }
-            },
-            "IPHONE 7": {
-                "TROCA DE TELA": { parcelado: "R$ 230,00", avista: "R$ 213,90" },
-                "TROCA DE BATERIA": { parcelado: "R$ 180,00", avista: "R$ 167,40" }
-            },
-            "IPHONE 8": {
-                "TROCA DE TELA": { parcelado: "R$ 230,00", avista: "R$ 213,90" },
-                "TROCA DE BATERIA": { parcelado: "R$ 200,00", avista: "R$ 186,00" }
-            }
-        };
-        this.initSelects();
-    }
-    
-    // CORRIGIR a função searchPrices para lidar com valores N/A
     searchPrices() {
         const selectedModel = this.modelSelect.value;
         const selectedService = this.serviceSelect.value;
-        const paymentType = document.querySelector('input[name="payment"]:checked').value.toLowerCase();
+        const paymentType = document.querySelector('input[name="payment"]:checked').value;
         
         this.resultsContainer.innerHTML = '';
         this.tableContainer.style.display = 'none';
         
         let results = [];
         
-        // Padronizar o tipo de pagamento para usar no objeto
-        const paymentKey = paymentType === 'a vista' ? 'avista' : 'parcelado';
+        // Converter para formato do objeto
+        const paymentKey = paymentType === 'A VISTA' ? 'avista' : 'parcelado';
         
         if (selectedModel && selectedService) {
-            // Pesquisa específica
-            const price = this.prices[selectedModel]?.[selectedService];
-            if (price && price[paymentKey] && price[paymentKey] !== "N/A") {
+            // Pesquisa específica: modelo e serviço
+            const priceData = this.prices[selectedModel]?.[selectedService];
+            if (priceData && priceData[paymentKey] && priceData[paymentKey] !== "N/A") {
                 results.push({
                     model: selectedModel,
                     service: selectedService,
-                    price: price[paymentKey],
+                    price: priceData[paymentKey],
                     payment: paymentType
                 });
             }
         } else if (selectedModel && !selectedService) {
             // Todos os serviços de um modelo
-            const services = this.prices[selectedModel];
-            if (services) {
-                for (const [serviceName, priceData] of Object.entries(services)) {
+            const modelPrices = this.prices[selectedModel];
+            if (modelPrices) {
+                for (const [serviceName, priceData] of Object.entries(modelPrices)) {
                     if (priceData[paymentKey] && priceData[paymentKey] !== "N/A") {
                         results.push({
                             model: selectedModel,
@@ -130,7 +97,6 @@ class RepairPriceApp {
         }
     }
     
-    // CORRIGIR a função createResultCard
     createResultCard(result) {
         const card = document.createElement('div');
         card.className = 'price-card';
@@ -143,21 +109,15 @@ class RepairPriceApp {
             "CONECTOR DE CARGA": "Conector de Carga"
         };
         
-        const paymentNames = {
-            "parcelado": "Parcelado",
-            "a vista": "À Vista"
-        };
-        
         card.innerHTML = `
             <div class="model">${result.model}</div>
             <div class="service">${serviceNames[result.service] || result.service}</div>
-            <div class="price">${result.price} (${paymentNames[result.payment]})</div>
+            <div class="price">${result.price} (${result.payment})</div>
         `;
         
         return card;
     }
     
-    // CORRIGIR a função showCompleteTable
     showCompleteTable() {
         this.tableBody.innerHTML = '';
         this.tableContainer.style.display = 'block';
@@ -173,13 +133,13 @@ class RepairPriceApp {
             modelCell.style.fontWeight = 'bold';
             row.appendChild(modelCell);
             
-            // Células de preços
+            // Células de preços para cada serviço
             this.services.forEach(service => {
                 const priceData = this.prices[model]?.[service] || { parcelado: "N/A", avista: "N/A" };
                 
                 // Preço parcelado
                 const parceladoCell = document.createElement('td');
-                parceladoCell.textContent = priceData.parcelado || "N/A";
+                parceladoCell.textContent = priceData.parcelado;
                 if (priceData.parcelado === "N/A") {
                     parceladoCell.className = 'not-available';
                 }
@@ -187,7 +147,7 @@ class RepairPriceApp {
                 
                 // Preço à vista
                 const avistaCell = document.createElement('td');
-                avistaCell.textContent = priceData.avista || "N/A";
+                avistaCell.textContent = priceData.avista;
                 if (priceData.avista === "N/A") {
                     avistaCell.className = 'not-available';
                 }
@@ -218,9 +178,10 @@ class RepairPriceApp {
             const option = document.createElement('option');
             option.value = service;
             // Formatando o nome do serviço para exibição
-            const displayName = service.split(' ').map(word => 
-                word.charAt(0) + word.slice(1).toLowerCase()
-            ).join(' ');
+            const displayName = service.toLowerCase()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
             option.textContent = displayName;
             this.serviceSelect.appendChild(option);
         });
@@ -250,12 +211,18 @@ class RepairPriceApp {
 
 // Inicializar a aplicação quando a página carregar
 document.addEventListener('DOMContentLoaded', () => {
+    // Criar botão de agendamento
+    createScheduleButton();
+    
+    // Inicializar app
     const app = new RepairPriceApp();
-    window.app = app; // Para acesso global se necessário
+    window.app = app;
 });
 
-// Adicionar este código no app.js para criar botão no HTML
+// Função para criar botão de agendamento
 function createScheduleButton() {
+    if (document.querySelector('.schedule-btn')) return;
+    
     const scheduleBtn = document.createElement('button');
     scheduleBtn.className = 'schedule-btn';
     scheduleBtn.innerHTML = '📅 Agendar Diagnóstico';
@@ -271,27 +238,34 @@ function createScheduleButton() {
         margin-top: 15px;
         display: block;
         margin: 20px auto;
+        width: 100%;
+        max-width: 300px;
+        transition: background 0.2s ease;
     `;
+    
+    scheduleBtn.onmouseenter = () => {
+        scheduleBtn.style.background = '#12a330';
+    };
+    
+    scheduleBtn.onmouseleave = () => {
+        scheduleBtn.style.background = '#15bb39ff';
+    };
     
     scheduleBtn.onclick = function() {
         const message = `Olá! Gostaria de agendar um diagnóstico para meu iPhone na IFIX.
-        
+
 Modelo: [Seu Modelo]
 Problema: [Descreva o problema]
 Preferência de Data: [Data desejada]
 Horário: [Manhã/Tarde/Noite]
 Telefone: [Seu telefone]`;
         
-        // Copiar para área de transferência
-        navigator.clipboard.writeText(message);
-        alert('Mensagem copiada! Cole no WhatsApp para agendar.');
-        
-        // Abrir WhatsApp (opcional)
-        window.open('https://wa.me/?text=' + encodeURIComponent(message), '_blank');
+        // Abrir WhatsApp
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
     };
     
-    document.querySelector('.search-box').appendChild(scheduleBtn);
+    const searchBox = document.querySelector('.search-box');
+    const buttonsDiv = searchBox.querySelector('.buttons');
+    searchBox.insertBefore(scheduleBtn, buttonsDiv.nextSibling);
 }
-
-// Chamar a função quando a página carregar
-document.addEventListener('DOMContentLoaded', createScheduleButton);
