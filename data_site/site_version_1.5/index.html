@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <title>IFIX - Consultor de Preços</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "SF Pro Display", Arial, sans-serif;
+        }
+        
+        body {
+            background: #0d0d0e;
+            color: #e5e5e7;
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, #0f0f11, #1a1a1d);
+            padding: 35px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+        }
+
+        p {
+            margin-top: 8px;
+            color: #c3c3c7;
+            font-size: 14px;
+        }
+
+        .search-box {
+            background: #141416;
+            padding: 25px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 25px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .filters {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #bdbdc2;
+            font-size: 13px;
+            letter-spacing: 0.3px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 14px;
+            background: #1d1d20;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #e8e8ea;
+            font-size: 14px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #6a5acd;
+        }
+
+        .payment-options {
+            background: #1d1d20;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 12px 16px;
+            border-radius: 10px;
+            display: flex;
+            gap: 25px;
+        }
+
+        .payment-option label {
+            margin: 0;
+            color: #d3d3d7;
+        }
+
+        input[type="radio"] {
+            accent-color: #6a5acd;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 14px;
+        }
+
+        button {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: 0.2s ease;
+        }
+
+        .search-btn {
+            background: #6a5acd;
+            color: white;
+            flex: 2;
+        }
+
+        .search-btn:hover {
+            background: #7c6df0;
+        }
+
+        .reset-btn {
+            background: #2a2a2d;
+            color: #c3c3c7;
+            flex: 1;
+        }
+
+        .reset-btn:hover {
+            background: #343437;
+        }
+
+        .results {
+            background: #141416;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 0 25px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        h2 {
+            margin-bottom: 12px;
+            color: #ffffff;
+            font-size: 22px;
+        }
+
+        #resultsCount {
+            margin-bottom: 20px;
+            color: #c3c3c7;
+        }
+
+        .price-card {
+            background: #1a1a1d;
+            padding: 18px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            border-left: 4px solid #6a5acd;
+            box-shadow: 0 0 12px rgba(0,0,0,0.25);
+        }
+
+        .model {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #ffffff;
+        }
+
+        .service {
+            color: #b7b7fb;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .price {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: #1a1a1d;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        th {
+            background: #6a5acd;
+            color: white;
+            padding: 12px;
+            font-size: 14px;
+        }
+
+        td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            color: #d7d7db;
+        }
+
+        tr:nth-child(even) {
+            background: #161618;
+        }
+
+        @media (max-width: 768px) {
+            .filters {
+                flex-direction: column;
+            }
+        }
+        
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        
+        .not-available {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Consulta de Preços - Reparo iPhone</h1>
+        <p>valores sujeito a modificação conforme o diagnostico</p>
+    </header>
+
+    <div class="search-box">
+        <div class="filters">
+            <div style="flex: 1">
+                <label>Modelo do iPhone</label>
+                <select id="model">
+                    <option value="">Todos os modelos</option>
+                </select>
+            </div>
+
+            <div style="flex: 1">
+                <label>Tipo de Serviço</label>
+                <select id="service">
+                    <option value="">Todos os serviços</option>
+                </select>
+            </div>
+
+            <div style="flex: 1">
+                <label>Forma de Pagamento</label>
+                <div class="payment-options">
+                    <div class="payment-option">
+                        <input type="radio" id="parcelado" name="payment" value="PARCELADO" checked>
+                        <label for="parcelado">Parcelado</label>
+                    </div>
+                    <div class="payment-option">
+                        <input type="radio" id="avista" name="payment" value="A VISTA">
+                        <label for="avista">À Vista</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button class="search-btn" id="searchBtn">Pesquisar</button>
+            <button class="reset-btn" id="resetBtn">Limpar</button>
+        </div>
+    </div>
+
+    <div class="results">
+        <h2>Resultados</h2>
+        <div id="resultsCount">0 resultados</div>
+        <div id="resultsContainer">
+            <p>Selecione filtros para visualizar os valores.</p>
+        </div>
+
+        <div id="tableContainer" style="display: none;">
+            <table id="priceTable">
+                <thead>
+                    <tr>
+                        <th>Modelo</th>
+                        <th>Tela (Parcelado)</th>
+                        <th>Tela (À Vista)</th>
+                        <th>Bateria (Parcelado)</th>
+                        <th>Bateria (À Vista)</th>
+                        <th>Vidro Traseiro (Parcelado)</th>
+                        <th>Vidro Traseiro (À Vista)</th>
+                        <th>Face ID (Parcelado)</th>
+                        <th>Face ID (À Vista)</th>
+                        <th>Conector (Parcelado)</th>
+                        <th>Conector (À Vista)</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Na seção de scripts, no final do body -->
+    <script src="data_bank.js"></script>
+    <script src="whatsapp-module.js"></script>
+    <script src="app.js"></script>
+</html>          
