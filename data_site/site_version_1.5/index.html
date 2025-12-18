@@ -3,102 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
     <title>IFIX - Consultor de Preços</title>
     <style>
+        @font-face {
+            font-family: 'Lufga';
+            src: url('https://fonts.cdnfonts.com/s/96879/LufgaRegular.woff') format('woff');
+            font-weight: 400;
+            font-style: normal;
+        }
+        
+        @font-face {
+            font-family: 'Lufga';
+            src: url('https://fonts.cdnfonts.com/s/96879/LufgaMedium.woff') format('woff');
+            font-weight: 500;
+            font-style: normal;
+        }
+        
+        @font-face {
+            font-family: 'Lufga';
+            src: url('https://fonts.cdnfonts.com/s/96879/LufgaSemiBold.woff') format('woff');
+            font-weight: 600;
+            font-style: normal;
+        }
+        
+        :root {
+            --color-dark-900: #141517;
+            --color-dark-800: #1B1D22;
+            --color-light-100: #F9F9F9;
+            --color-accent-green: #B7F272;
+            --color-accent-orange: #ED4F01;
+            --color-gray-300: #D1D5DB;
+            --color-gray-400: #9CA3AF;
+        }
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: "SF Pro Display", Arial, sans-serif;
+            font-family: "Lufga", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
         
         body {
-            background: #0d0d0e;
-            color: #e5e5e7;
+            background: var(--color-dark-900);
+            color: var(--color-light-100);
             padding: 30px;
             max-width: 1200px;
             margin: 0 auto;
+            min-height: 100vh;
         }
 
         header {
-            background: linear-gradient(135deg, #0f0f11, #1a1a1d);
+            background: var(--color-dark-800);
             padding: 35px;
             border-radius: 16px;
             margin-bottom: 30px;
             text-align: center;
-            box-shadow: 0 0 40px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         h1 {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 600;
-            letter-spacing: 0.5px;
-            color: #ffffff;
+            letter-spacing: -0.5px;
+            color: var(--color-light-100);
+            margin-bottom: 8px;
         }
 
-        p {
-            margin-top: 8px;
-            color: #c3c3c7;
-            font-size: 14px;
+        .highlight-orange {
+            color: var(--color-accent-orange);
+        }
+
+        .header-subtitle {
+            margin-top: 12px;
+            color: var(--color-gray-400);
+            font-size: 16px;
+            font-weight: 400;
         }
 
         .search-box {
-            background: #141416;
+            background: var(--color-dark-800);
             padding: 25px;
             border-radius: 16px;
             margin-bottom: 20px;
-            box-shadow: 0 0 25px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .filters {
             display: flex;
             gap: 20px;
             flex-wrap: wrap;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         label {
             display: block;
-            margin-bottom: 6px;
-            color: #bdbdc2;
-            font-size: 13px;
-            letter-spacing: 0.3px;
+            margin-bottom: 8px;
+            color: var(--color-gray-400);
+            font-size: 14px;
+            font-weight: 500;
         }
 
         select {
             width: 100%;
-            padding: 12px 14px;
-            background: #1d1d20;
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.08);
-            color: #e8e8ea;
-            font-size: 14px;
+            padding: 14px 16px;
+            background: rgba(27, 29, 34, 0.8);
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            color: var(--color-light-100);
+            font-size: 15px;
+            font-weight: 400;
+            transition: all 0.2s ease;
         }
 
         select:focus {
             outline: none;
-            border-color: #6a5acd;
+            border-color: var(--color-accent-orange);
+            box-shadow: 0 0 0 3px rgba(237, 79, 1, 0.1);
         }
 
         .payment-options {
-            background: #1d1d20;
-            border: 1px solid rgba(255,255,255,0.08);
-            padding: 12px 16px;
-            border-radius: 10px;
+            background: rgba(27, 29, 34, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            padding: 12px 20px;
+            border-radius: 12px;
             display: flex;
             gap: 25px;
         }
 
+        .payment-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .payment-option label {
             margin: 0;
-            color: #d3d3d7;
+            color: var(--color-gray-300);
+            font-weight: 400;
+            cursor: pointer;
         }
 
         input[type="radio"] {
-            accent-color: #6a5acd;
+            accent-color: var(--color-accent-orange);
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
         }
 
         .buttons {
@@ -107,112 +159,154 @@
         }
 
         button {
-            padding: 14px 20px;
+            padding: 16px 24px;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
             font-weight: 600;
-            font-size: 15px;
-            transition: 0.2s ease;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            font-family: "Lufga", sans-serif;
         }
 
         .search-btn {
-            background: #6a5acd;
-            color: white;
+            background: var(--color-accent-orange);
+            color: var(--color-light-100);
             flex: 2;
         }
 
         .search-btn:hover {
-            background: #7c6df0;
+            background: linear-gradient(135deg, var(--color-accent-orange), #FF6B35);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(237, 79, 1, 0.3);
         }
 
         .reset-btn {
-            background: #2a2a2d;
-            color: #c3c3c7;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--color-gray-400);
+            border: 2px solid rgba(255, 255, 255, 0.1);
             flex: 1;
         }
 
         .reset-btn:hover {
-            background: #343437;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--color-light-100);
+            border-color: var(--color-accent-orange);
         }
 
         .results {
-            background: #141416;
+            background: var(--color-dark-800);
             padding: 25px;
             border-radius: 16px;
-            box-shadow: 0 0 25px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         h2 {
             margin-bottom: 12px;
-            color: #ffffff;
-            font-size: 22px;
+            color: var(--color-light-100);
+            font-size: 24px;
+            font-weight: 600;
         }
 
         #resultsCount {
             margin-bottom: 20px;
-            color: #c3c3c7;
+            color: var(--color-gray-400);
+            font-size: 15px;
         }
 
         .price-card {
-            background: #1a1a1d;
-            padding: 18px;
-            margin-bottom: 12px;
-            border-radius: 10px;
-            border-left: 4px solid #6a5acd;
-            box-shadow: 0 0 12px rgba(0,0,0,0.25);
+            background: rgba(27, 29, 34, 0.8);
+            padding: 20px;
+            margin-bottom: 16px;
+            border-radius: 12px;
+            border-left: 4px solid var(--color-accent-orange);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease;
+        }
+
+        .price-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(237, 79, 1, 0.15);
         }
 
         .model {
             font-size: 18px;
             font-weight: 600;
-            margin-bottom: 5px;
-            color: #ffffff;
+            margin-bottom: 8px;
+            color: var(--color-light-100);
         }
 
         .service {
-            color: #b7b7fb;
-            font-weight: 600;
-            margin-bottom: 8px;
+            color: var(--color-accent-green);
+            font-weight: 500;
+            margin-bottom: 12px;
+            font-size: 15px;
         }
 
         .price {
-            font-size: 20px;
-            font-weight: 700;
-            color: #ffffff;
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--color-light-100);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
-            background: #1a1a1d;
+            background: rgba(27, 29, 34, 0.8);
             border-radius: 12px;
             overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         th {
-            background: #6a5acd;
-            color: white;
-            padding: 12px;
+            background: var(--color-accent-orange);
+            color: var(--color-light-100);
+            padding: 16px;
             font-size: 14px;
+            font-weight: 600;
+            text-align: center;
         }
 
         td {
-            padding: 12px;
+            padding: 16px;
             text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-            color: #d7d7db;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--color-gray-300);
+            font-weight: 400;
         }
 
         tr:nth-child(even) {
-            background: #161618;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        tr:hover {
+            background: rgba(237, 79, 1, 0.05);
         }
 
         @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            
             .filters {
                 flex-direction: column;
+            }
+            
+            .payment-options {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+            
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
             }
         }
         
@@ -222,15 +316,35 @@
         }
         
         .not-available {
-            color: #ff6b6b;
-            font-weight: bold;
+            color: #FF6B6B;
+            font-weight: 500;
+        }
+        
+        .available {
+            color: var(--color-accent-green);
+            font-weight: 500;
+        }
+        
+        .footer-note {
+            text-align: center;
+            margin-top: 30px;
+            color: var(--color-gray-400);
+            font-size: 14px;
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .logo {
+            font-weight: 600;
+            color: var(--color-accent-orange);
+            letter-spacing: -0.5px;
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>Consulta de Preços - Reparo iPhone</h1>
-        <p>valores sujeito a modificação conforme o diagnostico</p>
+        <h1>Consulta de Preços <span class="highlight-orange">IFIX</span></h1>
+        <p class="header-subtitle">Valores sujeitos à modificação conforme diagnóstico</p>
     </header>
 
     <div class="search-box">
@@ -298,9 +412,15 @@
             </table>
         </div>
     </div>
+    
+    <div class="footer-note">
+        <p><span class="logo">IFIX</span> - Consultor de Preços para Reparo iPhone</p>
+        <p style="margin-top: 8px; font-size: 13px;">Os valores são estimativas e podem variar após avaliação técnica</p>
+    </div>
 
     <!-- Na seção de scripts, no final do body -->
     <script src="data_bank.js"></script>
     <script src="whatsapp-module.js"></script>
     <script src="app.js"></script>
-</html>          
+</body>
+</html>
