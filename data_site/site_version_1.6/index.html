@@ -1,21 +1,376 @@
-reescreva esse readme, se fosse para usar apenas css,html, javascript e sql, A IDEIA E TER UM BANCO DE DADOS SALVO ENTÃO NÃO PODE APAGAR TODA VEZ QUE FECHO O SITE, QUERO EM HTML,CSS, JAVASCRIPT E SQL, PORQUE NÃO SEI OUTRAS TECNOLOGIAS E EU NÃO CONSEGUIRIA IMPLEMENTAR, QUERO QUE VOCÊ ME DEVOLVA UM README.MD 
-QUERO ESSA SEGUINTE LOGICA DE DIRETORIOS:
-app.js
-index.html
-modules:
-    dashboard.js
-    sidebar.js
-    Customers.js
-    serviceOrders.js
-    serviceCatalog.js
-    PriceCalculator.js
-data:
-    Orders_DB
-    Price_DB
-    Customers_DB
-    connection_DB 
-    catalog_DB
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <title>IFIX - Consultor de Preços Premium</title>
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <style>
+        :root {
+            --color-primary: #ed4f01;
+            --color-primary-dark: #c43e00;
+            --color-dark: #0f1012;
+            --color-dark-light: #1a1b1e;
+            --color-light: #f8f9fa;
+            --color-gray: #6c757d;
+            --color-success: #28a745;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        body {
+            background-color: var(--color-dark);
+            color: var(--color-light);
+            min-height: 100vh;
+        }
+        
+        .scrollbar-thin {
+            scrollbar-width: thin;
+            scrollbar-color: var(--color-primary) var(--color-dark-light);
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: var(--color-dark-light);
+            border-radius: 10px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: var(--color-primary);
+            border-radius: 10px;
+        }
+        
+        .glass-effect {
+            background: rgba(15, 16, 18, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .price-card {
+            transition: all 0.3s ease;
+            background: linear-gradient(145deg, #1a1b1e, #151618);
+        }
+        
+        .price-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(237, 79, 1, 0.15);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .select-search {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'%3E%3C/path%3E%3C/svg%3E");
+            background-position: right 0.75rem center;
+            background-repeat: no-repeat;
+            background-size: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100">
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-gray-900/90 z-50 flex items-center justify-center hidden">
+        <div class="text-center">
+            <div class="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-gray-300">Carregando...</p>
+        </div>
+    </div>
 
-app.js 
-    centraliza todos os codigos 
-index.html
+    <!-- Header -->
+    <header class="glass-effect sticky top-0 z-40 border-b border-gray-800">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                        <i data-lucide="smartphone" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold"> <span class="text-orange-500">IFIX</span></h1>
+                        <p class="text-sm text-gray-400">Consultor de Preços de reparo em celulares</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <button id="themeToggle" class="p-2 rounded-lg hover:bg-gray-800 transition-colors">
+                        <i data-lucide="moon" class="w-5 h-5"></i>
+                    </button>
+                    
+                    <button id="favoritesBtn" class="p-2 rounded-lg hover:bg-gray-800 transition-colors relative">
+                        <i data-lucide="star" class="w-5 h-5"></i>
+                        <span id="favoritesCount" class="absolute -top-1 -right-1 bg-orange-500 text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Hero Section -->
+        <div class="text-center mb-12">
+            <h2 class="text-3xl md:text-4xl font-bold mb-3">
+                Consultor de Preços 
+                <span class="text-orange-500">IFIX</span>
+            </h2>
+            <p class="text-gray-400 max-w-2xl mx-auto">
+                Valores estimados para serviços de reparo. O preço final será confirmado após diagnóstico técnico.
+            </p>
+        </div>
+
+        <!-- Search Panel -->
+        <div class="glass-effect rounded-2xl p-6 mb-8 shadow-xl">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <!-- Model Search -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        <i data-lucide="smartphone" class="w-4 h-4 inline mr-2"></i>
+                        Modelo do iPhone
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="modelSearch" 
+                            placeholder="Digite para buscar modelos..."
+                            class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all select-search"
+                        >
+                        <select id="model" class="hidden"></select>
+                    </div>
+                    <div id="modelSuggestions" class="mt-2 space-y-1 hidden"></div>
+                </div>
+
+                <!-- Service Search -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        <i data-lucide="settings" class="w-4 h-4 inline mr-2"></i>
+                        Tipo de Serviço
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="serviceSearch" 
+                            placeholder="Digite para buscar serviços..."
+                            class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all select-search"
+                        >
+                        <select id="service" class="hidden"></select>
+                    </div>
+                    <div id="serviceSuggestions" class="mt-2 space-y-1 hidden"></div>
+                </div>
+
+                <!-- Payment Options -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        <i data-lucide="credit-card" class="w-4 h-4 inline mr-2"></i>
+                        Forma de Pagamento
+                    </label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button 
+                            id="parceladoBtn"
+                            class="payment-btn bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 text-white py-3 px-4 rounded-xl font-medium transition-all hover:border-orange-500 active"
+                        >
+                            Parcelado
+                        </button>
+                        <button 
+                            id="avistaBtn"
+                            class="payment-btn bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 text-white py-3 px-4 rounded-xl font-medium transition-all hover:border-orange-500"
+                        >
+                            À Vista (-10%)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button 
+                    id="searchBtn" 
+                    class="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-orange-600 hover:to-red-600 transition-all flex items-center justify-center gap-2"
+                >
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                    Pesquisar Preços
+                </button>
+                
+                <button 
+                    id="resetBtn" 
+                    class="px-6 py-3 border border-gray-700 text-gray-300 rounded-xl font-medium hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
+                >
+                    <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                    Limpar Filtros
+                </button>
+                
+                <button 
+                    id="whatsappBtn"
+                    class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 transition-all flex items-center justify-center gap-2"
+                >
+                    <i data-lucide="message-circle" class="w-5 h-5"></i>
+                    Agendar no WhatsApp
+                </button>
+            </div>
+        </div>
+
+        <!-- AI Tips Section -->
+        <div id="aiTipsContainer" class="glass-effect rounded-2xl p-6 mb-8 hidden">
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                        <i data-lucide="brain" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-lg">💡 Dicas de Manutenção (IA)</h3>
+                        <p class="text-sm text-gray-400">Recomendações inteligentes para seu dispositivo</p>
+                    </div>
+                </div>
+                <button id="refreshTips" class="p-2 hover:bg-gray-800 rounded-lg transition-colors">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div id="aiTipsContent" class="space-y-4">
+                <!-- Tips will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="glass-effect rounded-2xl p-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-bold mb-1">Resultados</h2>
+                    <div id="resultsCount" class="text-gray-400">0 resultados encontrados</div>
+                </div>
+                
+                <div class="flex items-center gap-3 mt-4 sm:mt-0">
+                    <button id="toggleView" class="p-2 hover:bg-gray-800 rounded-lg transition-colors">
+                        <i data-lucide="layout-grid" class="w-5 h-5"></i>
+                    </button>
+                    <button id="exportBtn" class="p-2 hover:bg-gray-800 rounded-lg transition-colors">
+                        <i data-lucide="download" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Container -->
+            <div id="resultsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                <div class="col-span-full text-center py-12 text-gray-500">
+                    <i data-lucide="search" class="w-12 h-12 mx-auto mb-4"></i>
+                    <p>Selecione um modelo e serviço para visualizar os preços</p>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div id="tableContainer" class="hidden">
+                <div class="overflow-x-auto scrollbar-thin rounded-xl border border-gray-800">
+                    <table class="min-w-full divide-y divide-gray-800">
+                        <thead class="bg-gray-900/50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-800">
+                                    Modelo
+                                </th>
+                                <!-- Headers will be dynamically generated -->
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-gray-800">
+                            <!-- Table rows will be dynamically generated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Favorites Section -->
+        <div id="favoritesContainer" class="glass-effect rounded-2xl p-6 mt-8 hidden">
+            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i data-lucide="star" class="w-5 h-5 text-yellow-500"></i>
+                Meus Favoritos
+            </h3>
+            <div id="favoritesList" class="space-y-3">
+                <!-- Favorites will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-12 pt-8 border-t border-gray-800">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                            <i data-lucide="shield" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold">IFIX </h4>
+                            <p class="text-sm text-gray-400">Garantia de 90 dias</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-400 text-sm">
+                        Consultor de preços para reparos de iPhone. Valores sujeitos à alteração após diagnóstico.
+                    </p>
+                </div>
+                
+                <div>
+                    <h5 class="font-semibold mb-3">Serviços</h5>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li>• Troca de Tela</li>
+                        <li>• Troca de Bateria</li>
+                        <li>• Vidro Traseiro</li>
+                        <li>• Face ID</li>
+                        <li>• Conector de Carga</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h5 class="font-semibold mb-3">Informações</h5>
+                    <div class="space-y-3 text-sm text-gray-400">
+                        <p>
+                            <i data-lucide="clock" class="w-4 h-4 inline mr-2"></i>
+                            Seg - Sex: 9h às 18h
+                        </p>
+                        <p>
+                            <i data-lucide="phone" class="w-4 h-4 inline mr-2"></i>
+                            (15) 99163-0531
+                        </p>
+                        <p>
+                            <i data-lucide="map-pin" class="w-4 h-4 inline mr-2"></i>
+                            Boituva - SP
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 pt-6 border-t border-gray-800 text-center text-gray-500 text-sm">
+                <p>© 2024 IFIX - Consultor de Preços. Todos os direitos reservados.</p>
+                <p class="mt-1">Os valores são estimativas e podem variar após avaliação técnica.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="data_bank.js"></script>
+    <script src="whatsapp-module.js"></script>
+    <script src="ai-service.js"></script>
+    <script src="app-enhanced.js"></script>
+</body>
+</html>
