@@ -1,0 +1,2082 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFIX BOITUVA - Sistema de Gestão</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ===== VARIÁVEIS DE CORES ===== */
+        :root {
+            --deep-black: #0C0C0C;
+            --graphite-black: #181818;
+            --charcoal-gray: #2A2A2A;
+            --technical-white: #F2F2F2;
+            --light-gray: #B0B0B0;
+            --primary-orange: #F57C00;
+            --dark-orange: #EF6C00;
+            --burnt-orange: #C75B12;
+        }
+        
+        /* ===== RESET E CONFIGURAÇÕES GERAIS ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Urbanist', sans-serif;
+        }
+        
+        body {
+            background-color: var(--deep-black);
+            color: var(--technical-white);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: 250px;
+            background-color: var(--graphite-black);
+            padding: 20px 0;
+            flex-shrink: 0;
+            border-right: 1px solid var(--charcoal-gray);
+            transition: width 0.3s ease;
+        }
+        
+        .sidebar.collapsed {
+            width: 70px;
+        }
+        
+        .logo {
+            padding: 0 20px 30px;
+            text-align: center;
+            border-bottom: 1px solid var(--charcoal-gray);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .logo h1 {
+            font-size: 1.8rem;
+            color: var(--primary-orange);
+            font-weight: 700;
+            transition: opacity 0.3s ease;
+        }
+        
+        .sidebar.collapsed .logo h1 {
+            display: none;
+        }
+        
+        .logo span {
+            color: var(--technical-white);
+            font-weight: 300;
+        }
+        
+        .logo-icon {
+            font-size: 1.5rem;
+            color: var(--primary-orange);
+        }
+        
+        .toggle-sidebar {
+            position: absolute;
+            right: -12px;
+            top: 20px;
+            background: var(--primary-orange);
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+        
+        .nav-menu {
+            list-style: none;
+        }
+        
+        .nav-menu li {
+            margin-bottom: 5px;
+        }
+        
+        .nav-menu a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: var(--light-gray);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        
+        .nav-menu a:hover, .nav-menu a.active {
+            background-color: var(--charcoal-gray);
+            color: var(--technical-white);
+            border-left: 4px solid var(--primary-orange);
+        }
+        
+        .nav-menu i {
+            width: 30px;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        
+        .nav-text {
+            transition: opacity 0.3s ease;
+        }
+        
+        .sidebar.collapsed .nav-text {
+            display: none;
+        }
+        
+        /* ===== CONTEÚDO PRINCIPAL ===== */
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            transition: margin-left 0.3s ease;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--charcoal-gray);
+        }
+        
+        .header h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--technical-white);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-orange);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        
+        /* ===== DASHBOARD ===== */
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background-color: var(--graphite-black);
+            padding: 25px;
+            border-radius: 8px;
+            border-left: 5px solid var(--primary-orange);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-card h3 {
+            font-size: 1rem;
+            color: var(--light-gray);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .stat-card .value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--technical-white);
+        }
+        
+        /* ===== TABELAS ===== */
+        .table-container {
+            background-color: var(--graphite-black);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+        }
+        
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--charcoal-gray);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .table-header h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--technical-white);
+        }
+        
+        .search-box {
+            position: relative;
+            width: 300px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px 10px 40px;
+            background-color: var(--charcoal-gray);
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: var(--technical-white);
+            font-size: 0.9rem;
+        }
+        
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--light-gray);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background-color: var(--charcoal-gray);
+        }
+        
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--light-gray);
+            border-bottom: 1px solid #444;
+        }
+        
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #333;
+            color: var(--technical-white);
+        }
+        
+        tr:hover {
+            background-color: rgba(245, 124, 0, 0.05);
+        }
+        
+        /* ===== BOTÕES ===== */
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-orange);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--dark-orange);
+        }
+        
+        .btn-secondary {
+            background-color: var(--charcoal-gray);
+            color: var(--technical-white);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #333;
+        }
+        
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+        
+        .btn-icon {
+            background: none;
+            border: none;
+            color: var(--primary-orange);
+            cursor: pointer;
+            font-size: 1.1rem;
+            margin-right: 10px;
+        }
+        
+        .btn-icon:hover {
+            color: var(--dark-orange);
+        }
+        
+        /* ===== FORMULÁRIOS ===== */
+        .form-container {
+            background-color: var(--graphite-black);
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--light-gray);
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            background-color: var(--charcoal-gray);
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: var(--technical-white);
+            font-size: 1rem;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-orange);
+        }
+        
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        /* ===== MODAL ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: var(--graphite-black);
+            width: 90%;
+            max-width: 800px;
+            border-radius: 8px;
+            overflow: hidden;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--charcoal-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--technical-white);
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--light-gray);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        /* ===== BADGES DE STATUS ===== */
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-waiting { background-color: #FF9800; color: #000; }
+        .status-analysis { background-color: #2196F3; color: white; }
+        .status-approval { background-color: #9C27B0; color: white; }
+        .status-maintenance { background-color: #FF5722; color: white; }
+        .status-ready { background-color: #4CAF50; color: white; }
+        .status-delivered { background-color: #607D8B; color: white; }
+        
+        /* ===== ABAS ===== */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--charcoal-gray);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            color: var(--light-gray);
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            color: var(--primary-orange);
+            border-bottom: 3px solid var(--primary-orange);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* ===== CHECKLIST ===== */
+        .checklist-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .checklist-item {
+            background-color: var(--charcoal-gray);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid var(--primary-orange);
+        }
+        
+        /* ===== RESPONSIVIDADE ===== */
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: fixed;
+                z-index: 100;
+                height: 100vh;
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .menu-toggle {
+                display: block;
+                background: none;
+                border: none;
+                color: var(--technical-white);
+                font-size: 1.5rem;
+                cursor: pointer;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .table-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .search-box {
+                width: 100%;
+                margin-top: 15px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+        
+        /* ===== IMPRESSÃO ===== */
+        @media print {
+            .sidebar, .header, .btn, .search-box, .modal {
+                display: none !important;
+            }
+            
+            .main-content {
+                padding: 0;
+            }
+            
+            .table-container, .form-container, .stat-card {
+                box-shadow: none;
+                border: 1px solid #000;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <i class="fas fa-tools logo-icon"></i>
+                <h1>IFIX <span>BOITUVA</span></h1>
+                <button class="toggle-sidebar" id="toggleSidebar">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#" class="nav-link active" data-target="dashboard"><i class="fas fa-tachometer-alt"></i> <span class="nav-text">Dashboard</span></a></li>
+                <li><a href="#" class="nav-link" data-target="client-management"><i class="fas fa-users"></i> <span class="nav-text">Gestão de Clientes</span></a></li>
+                <li><a href="#" class="nav-link" data-target="price-registration"><i class="fas fa-tags"></i> <span class="nav-text">Cadastro de Preços</span></a></li>
+                <li><a href="#" class="nav-link" data-target="os-management"><i class="fas fa-clipboard-list"></i> <span class="nav-text">Gestão de OS</span></a></li>
+            </ul>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 id="page-title">Dashboard</h2>
+                <div class="user-info">
+                    <span>Usuário: Admin</span>
+                    <div class="user-avatar">A</div>
+                </div>
+            </div>
+            
+            <!-- Dashboard Section -->
+            <div id="dashboard" class="page-section active">
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <h3>Ganhos Mensais</h3>
+                        <div class="value">R$ 8.450,00</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total de Serviços Feitos</h3>
+                        <div class="value">142</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total de Clientes Cadastrados</h3>
+                        <div class="value">89</div>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>Últimas Ordens de Serviço</h3>
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" placeholder="Pesquisar OS...">
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Protocolo</th>
+                                <th>Cliente</th>
+                                <th>Equipamento</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboard-os-body">
+                            <!-- OS data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Client Management Section -->
+            <div id="client-management" class="page-section">
+                <div class="tabs">
+                    <button class="tab active" data-tab="client-list">Lista de Clientes</button>
+                    <button class="tab" data-tab="client-registration">Cadastrar Cliente</button>
+                </div>
+                
+                <div id="client-list" class="tab-content active">
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>Tabela de Clientes</h3>
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="search-clients" placeholder="Pesquisar (nome, CPF, telefone)...">
+                            </div>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome do Cliente</th>
+                                    <th>Documento</th>
+                                    <th>Telefone WhatsApp</th>
+                                    <th>Data de Cadastro</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clients-table-body">
+                                <!-- Client data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="client-registration" class="tab-content">
+                    <div class="form-container">
+                        <h3>Cadastro de Cliente</h3>
+                        <form id="new-client-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="client-name">Nome Completo *</label>
+                                    <input type="text" id="client-name" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="client-document">CPF/CNPJ *</label>
+                                    <input type="text" id="client-document" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="client-phone">Telefone *</label>
+                                    <input type="tel" id="client-phone" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="client-email">E-mail</label>
+                                    <input type="email" id="client-email" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="client-address">Endereço</label>
+                                <input type="text" id="client-address" class="form-control" placeholder="Digite para sugestões automáticas...">
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">Cadastrar Cliente</button>
+                                <button type="reset" class="btn btn-secondary">Limpar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Price Registration Section -->
+            <div id="price-registration" class="page-section">
+                <div class="form-container">
+                    <h3>Cadastro de Preços</h3>
+                    <form id="price-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="service-name">Nome do Serviço *</label>
+                                <input type="text" id="service-name" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="service-price-cpf">Preço CPF (R$) *</label>
+                                <input type="number" id="service-price-cpf" class="form-control" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="service-price-cnpj">Preço CNPJ (R$) *</label>
+                                <input type="number" id="service-price-cnpj" class="form-control" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="service-description">Descrição do Serviço</label>
+                            <textarea id="service-description" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Salvar Serviço</button>
+                            <button type="reset" class="btn btn-secondary">Limpar</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>Serviços Cadastrados</h3>
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" placeholder="Pesquisar serviço...">
+                        </div>
+                    </div>
+                    <table id="services-table">
+                        <thead>
+                            <tr>
+                                <th>Serviço</th>
+                                <th>Preço CPF</th>
+                                <th>Preço CNPJ</th>
+                                <th>Descrição</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="services-table-body">
+                            <!-- Services will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- OS Management Section -->
+            <div id="os-management" class="page-section">
+                <div class="tabs">
+                    <button class="tab active" data-tab="os-list">Lista de OS</button>
+                    <button class="tab" data-tab="os-registration">Cadastrar OS</button>
+                </div>
+                
+                <div id="os-list" class="tab-content active">
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>Ordens de Serviço</h3>
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="search-os" placeholder="Pesquisar (protocolo, CPF, telefone)...">
+                            </div>
+                        </div>
+                        <div style="padding: 15px 20px; background-color: var(--charcoal-gray); border-bottom: 1px solid #444;">
+                            <span style="margin-right: 15px; font-weight: 500; color: var(--light-gray)">Filtrar por status:</span>
+                            <button class="btn btn-small btn-secondary" data-status="all">Todos</button>
+                            <button class="btn btn-small btn-secondary" data-status="waiting">Aguardando Análise</button>
+                            <button class="btn btn-small btn-secondary" data-status="analysis">Em Análise</button>
+                            <button class="btn btn-small btn-secondary" data-status="approval">Aguardando Aprovação</button>
+                            <button class="btn btn-small btn-secondary" data-status="maintenance">Em Manutenção</button>
+                            <button class="btn btn-small btn-secondary" data-status="ready">Pronto</button>
+                            <button class="btn btn-small btn-secondary" data-status="delivered">Entregue</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Protocolo</th>
+                                    <th>Cliente</th>
+                                    <th>Equipamento</th>
+                                    <th>Status</th>
+                                    <th>Data Entrada</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="os-table-body">
+                                <!-- OS data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="os-registration" class="tab-content">
+                    <div class="form-container">
+                        <h3>Cadastrar Ordem de Serviço</h3>
+                        <form id="os-form">
+                            <div class="form-group">
+                                <label for="os-client">Cliente *</label>
+                                <select id="os-client" class="form-control" required>
+                                    <option value="">Selecione um cliente...</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="os-date">Data de Entrada *</label>
+                                    <input type="datetime-local" id="os-date" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="os-equipment">Modelo do Aparelho *</label>
+                                    <input type="text" id="os-equipment" class="form-control" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="os-password">Senha do Aparelho</label>
+                                <input type="text" id="os-password" class="form-control">
+                            </div>
+                            
+                            <div class="form-group">
+                                <h4 style="margin: 20px 0 10px; color: var(--primary-orange);">Condições Iniciais do Aparelho</h4>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="os-powered">Chegou ligado?</label>
+                                    <select id="os-powered" class="form-control">
+                                        <option value="">Selecione...</option>
+                                        <option value="yes">Sim</option>
+                                        <option value="no">Não</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="os-accessories">Retirou chip e capinha?</label>
+                                    <select id="os-accessories" class="form-control">
+                                        <option value="">Selecione...</option>
+                                        <option value="yes">Sim</option>
+                                        <option value="no">Não</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="os-previous-service">Já passou por manutenção?</label>
+                                    <select id="os-previous-service" class="form-control">
+                                        <option value="">Selecione...</option>
+                                        <option value="yes">Sim</option>
+                                        <option value="no">Não</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="os-water-contact">Já teve contato com água?</label>
+                                    <select id="os-water-contact" class="form-control">
+                                        <option value="">Selecione...</option>
+                                        <option value="yes">Sim</option>
+                                        <option value="no">Não</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group" id="water-time-group" style="display: none;">
+                                <label for="os-water-time">Há quanto tempo?</label>
+                                <input type="text" id="os-water-time" class="form-control" placeholder="Ex: 2 dias, 1 semana...">
+                            </div>
+                            
+                            <div class="form-group">
+                                <h4 style="margin: 20px 0 10px; color: var(--primary-orange);">Testes de Entrada (Checklist Técnico)</h4>
+                            </div>
+                            
+                            <div id="technical-checklist" class="checklist-container">
+                                <!-- Checklist items will be populated by JavaScript -->
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="all-tests-possible">Foi possível realizar todos os testes?</label>
+                                <select id="all-tests-possible" class="form-control">
+                                    <option value="">Selecione...</option>
+                                    <option value="yes">Sim</option>
+                                    <option value="no">Não</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <h4 style="margin: 20px 0 10px; color: var(--primary-orange);">Serviços</h4>
+                                <div id="services-checklist">
+                                    <!-- Services checklist will be populated by JavaScript -->
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="os-description">Descrição dos serviços executados</label>
+                                <textarea id="os-description" class="form-control" rows="3"></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="os-observations">Observações</label>
+                                <textarea id="os-observations" class="form-control" rows="2"></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="os-technical-notes">Campo livre para anotações técnicas ou comerciais</label>
+                                <textarea id="os-technical-notes" class="form-control" rows="3"></textarea>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="os-service-value">Valor do serviço (R$)</label>
+                                    <input type="number" id="os-service-value" class="form-control" step="0.01">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <h4 style="margin: 20px 0 10px; color: var(--primary-orange);">Termos e Assinatura</h4>
+                                <div class="form-group">
+                                    <label for="os-terms">
+                                        <input type="checkbox" id="os-terms" required>
+                                        Concordo com os termos descritos
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">Cadastrar OS</button>
+                                <button type="reset" class="btn btn-secondary">Limpar</button>
+                                <button type="button" class="btn btn-primary" id="print-os-btn">Imprimir OS</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Client Profile Modal -->
+    <div id="client-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Perfil do Cliente</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                    <button class="btn btn-primary" id="print-client-btn"><i class="fas fa-print"></i> Imprimir Ficha</button>
+                    <button class="btn btn-secondary" id="close-modal-btn">Fechar</button>
+                </div>
+                
+                <div class="form-container" style="margin-bottom: 20px;">
+                    <h4>Dados Pessoais</h4>
+                    <form id="client-profile-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="modal-client-name">Nome Completo</label>
+                                <input type="text" id="modal-client-name" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="modal-client-document">Documento</label>
+                                <input type="text" id="modal-client-document" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="modal-client-phone">Telefone</label>
+                                <input type="text" id="modal-client-phone" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="modal-client-address">Endereço</label>
+                                <input type="text" id="modal-client-address" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Atualizar Dados</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="stat-card" style="margin-bottom: 20px;">
+                    <h3>Total de Gastos do Cliente</h3>
+                    <div class="value" id="client-total-spent">R$ 0,00</div>
+                </div>
+                
+                <div class="table-container">
+                    <div class="table-header">
+                        <h4>Histórico de Manutenção</h4>
+                    </div>
+                    <table id="client-history-table">
+                        <thead>
+                            <tr>
+                                <th>Protocolo</th>
+                                <th>Data</th>
+                                <th>Serviço</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="client-history-body">
+                            <!-- Client history will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- OS Details Modal -->
+    <div id="os-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="os-modal-title">Ordem de Serviço</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                    <button class="btn btn-primary" id="print-os-modal-btn"><i class="fas fa-print"></i> Imprimir OS</button>
+                    <button class="btn btn-secondary" id="close-os-modal-btn">Fechar</button>
+                </div>
+                
+                <div class="form-container" style="margin-bottom: 20px;">
+                    <h4>Dados do Cliente</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nome</label>
+                            <div class="form-control" style="background-color: var(--graphite-black);" id="modal-client-name-os"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>WhatsApp</label>
+                            <div class="form-control" style="background-color: var(--graphite-black);" id="modal-client-whatsapp-os"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>CPF</label>
+                            <div class="form-control" style="background-color: var(--graphite-black);" id="modal-client-cpf-os"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-container" style="margin-bottom: 20px;">
+                    <h4>Controle de Status</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="os-status-modal">Status Atual</label>
+                            <select id="os-status-modal" class="form-control">
+                                <option value="waiting">Aguardando Análise</option>
+                                <option value="analysis">Em Análise</option>
+                                <option value="approval">Aguardando Aprovação</option>
+                                <option value="maintenance">Em Manutenção</option>
+                                <option value="ready">Pronto</option>
+                                <option value="delivered">Entregue</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="os-equipment-modal">Equipamento (Modelo)</label>
+                            <input type="text" id="os-equipment-modal" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-container" style="margin-bottom: 20px;">
+                    <h4>Laudo de Entrada (Checklist)</h4>
+                    <div id="modal-checklist-container" class="checklist-container">
+                        <!-- Checklist will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="form-container">
+                    <h4>Defeito e Diagnóstico Preliminar</h4>
+                    <div class="form-group">
+                        <label>Serviço</label>
+                        <div class="form-control" style="background-color: var(--graphite-black); height: auto; min-height: 60px;" id="modal-service-desc"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notas Internas</label>
+                        <div class="form-control" style="background-color: var(--graphite-black); height: auto; min-height: 60px;" id="modal-internal-notes"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Total Estimado</label>
+                            <div class="form-control" style="background-color: var(--graphite-black);" id="modal-total-estimated"></div>
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: flex-end; gap: 10px;">
+                            <button class="btn btn-primary" id="mark-as-ready-btn">Marcar como Pronto</button>
+                            <button class="btn btn-secondary" id="deliver-device-btn">Entregar Aparelho</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== SISTEMA PRINCIPAL =====
+        class IFIXSystem {
+            constructor() {
+                this.currentClientId = null;
+                this.currentOSId = null;
+                
+                // Inicializar dados de exemplo
+                this.initSampleData();
+                
+                // Inicializar elementos DOM
+                this.initializeElements();
+                
+                // Configurar event listeners
+                this.setupEventListeners();
+                
+                // Inicializar interface
+                this.initInterface();
+                
+                console.log('Sistema IFIX BOITUVA inicializado');
+            }
+            
+            // ===== DADOS DE EXEMPLO =====
+            initSampleData() {
+                // Clientes de exemplo
+                this.clients = [
+                    {
+                        id: 1,
+                        name: "Maria Silva",
+                        document: "123.456.789-00",
+                        phone: "(11) 98765-4321",
+                        email: "maria.silva@email.com",
+                        address: "Rua das Flores, 123, Centro, Boituva-SP",
+                        registrationDate: "15/03/2023",
+                        totalSpent: 1250.00
+                    },
+                    {
+                        id: 2,
+                        name: "João Santos",
+                        document: "987.654.321-00",
+                        phone: "(11) 91234-5678",
+                        email: "joao.santos@email.com",
+                        address: "Av. Principal, 456, Jardim, Boituva-SP",
+                        registrationDate: "22/05/2023",
+                        totalSpent: 850.00
+                    },
+                    {
+                        id: 3,
+                        name: "Ana Oliveira",
+                        document: "456.789.123-00",
+                        phone: "(11) 94567-8901",
+                        email: "ana.oliveira@email.com",
+                        address: "Rua dos Pinheiros, 789, Vila Nova, Boituva-SP",
+                        registrationDate: "10/07/2023",
+                        totalSpent: 320.00
+                    }
+                ];
+                
+                // Serviços de exemplo
+                this.services = [
+                    {
+                        id: 1,
+                        name: "Troca de Tela",
+                        description: "Substituição completa da tela do aparelho",
+                        priceCPF: 350.00,
+                        priceCNPJ: 380.00
+                    },
+                    {
+                        id: 2,
+                        name: "Troca de Bateria",
+                        description: "Substituição da bateria do aparelho",
+                        priceCPF: 250.00,
+                        priceCNPJ: 280.00
+                    },
+                    {
+                        id: 3,
+                        name: "Vidro Traseiro",
+                        description: "Substituição do vidro traseiro",
+                        priceCPF: 200.00,
+                        priceCNPJ: 220.00
+                    },
+                    {
+                        id: 4,
+                        name: "Reparo Face ID",
+                        description: "Conserto do sistema Face ID",
+                        priceCPF: 450.00,
+                        priceCNPJ: 480.00
+                    },
+                    {
+                        id: 5,
+                        name: "Conector de Carga",
+                        description: "Substituição do conector de carga",
+                        priceCPF: 180.00,
+                        priceCNPJ: 200.00
+                    }
+                ];
+                
+                // Ordens de Serviço de exemplo
+                this.serviceOrders = [
+                    {
+                        id: 1,
+                        protocol: "2023-0876",
+                        clientId: 1,
+                        clientName: "Maria Silva",
+                        equipment: "iPhone 13",
+                        status: "ready",
+                        entryDate: "10/08/2023",
+                        serviceDescription: "Troca de tela devido a quebra do display",
+                        serviceValue: 350.00,
+                        checklist: {
+                            wifi: "OK",
+                            bluetooth: "OK",
+                            screen: "NOK",
+                            microphone: "OK",
+                            camera: "OK"
+                        }
+                    },
+                    {
+                        id: 2,
+                        protocol: "2023-0875",
+                        clientId: 2,
+                        clientName: "João Santos",
+                        equipment: "Samsung Galaxy S21",
+                        status: "maintenance",
+                        entryDate: "05/08/2023",
+                        serviceDescription: "Troca de bateria",
+                        serviceValue: 250.00,
+                        checklist: {
+                            wifi: "OK",
+                            bluetooth: "OK",
+                            screen: "OK",
+                            microphone: "OK",
+                            camera: "OK"
+                        }
+                    },
+                    {
+                        id: 3,
+                        protocol: "2023-0874",
+                        clientId: 3,
+                        clientName: "Ana Oliveira",
+                        equipment: "Xiaomi Redmi Note 10",
+                        status: "waiting",
+                        entryDate: "01/08/2023",
+                        serviceDescription: "Conector de carga com defeito",
+                        serviceValue: 180.00,
+                        checklist: {
+                            wifi: "OK",
+                            bluetooth: "OK",
+                            screen: "OK",
+                            microphone: "OK",
+                            camera: "OK"
+                        }
+                    }
+                ];
+                
+                // Histórico de clientes
+                this.clientHistory = [
+                    { clientId: 1, osId: 1, date: "10/08/2023", service: "Troca de Tela", value: 350.00, status: "ready" },
+                    { clientId: 1, osId: 4, date: "15/05/2023", service: "Troca de Bateria", value: 250.00, status: "delivered" },
+                    { clientId: 1, osId: 5, date: "20/03/2023", service: "Vidro Traseiro", value: 200.00, status: "delivered" },
+                    { clientId: 1, osId: 6, date: "05/02/2023", service: "Conector de Carga", value: 180.00, status: "delivered" },
+                    { clientId: 2, osId: 2, date: "05/08/2023", service: "Troca de Bateria", value: 250.00, status: "maintenance" },
+                    { clientId: 2, osId: 7, date: "10/06/2023", service: "Troca de Tela", value: 350.00, status: "delivered" },
+                    { clientId: 3, osId: 3, date: "01/08/2023", service: "Conector de Carga", value: 180.00, status: "waiting" }
+                ];
+            }
+            
+            // ===== INICIALIZAÇÃO DE ELEMENTOS DOM =====
+            initializeElements() {
+                // Elementos principais
+                this.sidebar = document.getElementById('sidebar');
+                this.toggleSidebarBtn = document.getElementById('toggleSidebar');
+                this.menuToggle = document.getElementById('menuToggle');
+                
+                // Navegação
+                this.navLinks = document.querySelectorAll('.nav-link');
+                this.pageSections = document.querySelectorAll('.page-section');
+                this.pageTitle = document.getElementById('page-title');
+                
+                // Abas
+                this.tabs = document.querySelectorAll('.tab');
+                this.tabContents = document.querySelectorAll('.tab-content');
+                
+                // Modais
+                this.modals = document.querySelectorAll('.modal');
+                this.closeModalButtons = document.querySelectorAll('.close-modal, #close-modal-btn, #close-os-modal-btn');
+                this.clientModal = document.getElementById('client-modal');
+                this.osModal = document.getElementById('os-modal');
+                
+                // Formulários
+                this.newClientForm = document.getElementById('new-client-form');
+                this.priceForm = document.getElementById('price-form');
+                this.osForm = document.getElementById('os-form');
+                this.clientProfileForm = document.getElementById('client-profile-form');
+                
+                // Tabelas
+                this.clientsTableBody = document.getElementById('clients-table-body');
+                this.servicesTableBody = document.getElementById('services-table-body');
+                this.osTableBody = document.getElementById('os-table-body');
+                this.dashboardOsBody = document.getElementById('dashboard-os-body');
+                this.clientHistoryBody = document.getElementById('client-history-body');
+                
+                // Elementos de pesquisa
+                this.searchClientsInput = document.getElementById('search-clients');
+                this.searchOsInput = document.getElementById('search-os');
+                
+                // Elementos de OS
+                this.osClientSelect = document.getElementById('os-client');
+                this.technicalChecklist = document.getElementById('technical-checklist');
+                this.servicesChecklist = document.getElementById('services-checklist');
+                this.osWaterContact = document.getElementById('os-water-contact');
+                this.waterTimeGroup = document.getElementById('water-time-group');
+                
+                // Botões de impressão
+                this.printClientBtn = document.getElementById('print-client-btn');
+                this.printOsBtn = document.getElementById('print-os-btn');
+                this.printOsModalBtn = document.getElementById('print-os-modal-btn');
+                
+                // Botões de ação
+                this.markAsReadyBtn = document.getElementById('mark-as-ready-btn');
+                this.deliverDeviceBtn = document.getElementById('deliver-device-btn');
+            }
+            
+            // ===== CONFIGURAÇÃO DE EVENT LISTENERS =====
+            setupEventListeners() {
+                // Sidebar toggle
+                this.toggleSidebarBtn.addEventListener('click', () => this.toggleSidebar());
+                this.menuToggle.addEventListener('click', () => this.toggleSidebarMobile());
+                
+                // Navegação entre seções
+                this.navLinks.forEach(link => {
+                    link.addEventListener('click', (e) => this.navigateToSection(e));
+                });
+                
+                // Abas
+                this.tabs.forEach(tab => {
+                    tab.addEventListener('click', (e) => this.switchTab(e));
+                });
+                
+                // Fechar modais
+                this.closeModalButtons.forEach(button => {
+                    button.addEventListener('click', () => this.closeAllModals());
+                });
+                
+                // Fechar modal ao clicar fora
+                window.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('modal')) {
+                        this.closeAllModals();
+                    }
+                });
+                
+                // Formulários
+                this.newClientForm.addEventListener('submit', (e) => this.handleNewClient(e));
+                this.priceForm.addEventListener('submit', (e) => this.handleNewService(e));
+                this.osForm.addEventListener('submit', (e) => this.handleNewOS(e));
+                this.clientProfileForm.addEventListener('submit', (e) => this.updateClientProfile(e));
+                
+                // Pesquisa
+                this.searchClientsInput.addEventListener('input', () => this.filterClients());
+                this.searchOsInput.addEventListener('input', () => this.filterOS());
+                
+                // Filtros de status OS
+                document.querySelectorAll('[data-status]').forEach(button => {
+                    button.addEventListener('click', (e) => this.filterOSByStatus(e));
+                });
+                
+                // Controle de campo condicional
+                this.osWaterContact.addEventListener('change', () => this.toggleWaterTimeField());
+                
+                // Botões de impressão
+                this.printClientBtn.addEventListener('click', () => window.print());
+                this.printOsBtn.addEventListener('click', () => window.print());
+                this.printOsModalBtn.addEventListener('click', () => window.print());
+                
+                // Botões de ação OS
+                this.markAsReadyBtn.addEventListener('click', () => this.markOSAsReady());
+                this.deliverDeviceBtn.addEventListener('click', () => this.deliverDevice());
+                
+                // Atualizar status OS no modal
+                document.getElementById('os-status-modal').addEventListener('change', (e) => this.updateOSStatus(e));
+            }
+            
+            // ===== INICIALIZAÇÃO DA INTERFACE =====
+            initInterface() {
+                // Preencher dropdown de clientes
+                this.populateClientSelect();
+                
+                // Preencher checklist técnico
+                this.populateTechnicalChecklist();
+                
+                // Preencher checklist de serviços
+                this.populateServicesChecklist();
+                
+                // Carregar dados nas tabelas
+                this.loadClientsTable();
+                this.loadServicesTable();
+                this.loadOSTable();
+                this.loadDashboardOS();
+                
+                // Configurar data atual no formulário de OS
+                this.setCurrentDateTime();
+            }
+            
+            // ===== FUNÇÕES DA SIDEBAR =====
+            toggleSidebar() {
+                this.sidebar.classList.toggle('collapsed');
+                const icon = this.toggleSidebarBtn.querySelector('i');
+                icon.classList.toggle('fa-chevron-left');
+                icon.classList.toggle('fa-chevron-right');
+            }
+            
+            toggleSidebarMobile() {
+                this.sidebar.classList.toggle('open');
+            }
+            
+            // ===== NAVEGAÇÃO =====
+            navigateToSection(e) {
+                e.preventDefault();
+                
+                // Remover classe active de todos os links
+                this.navLinks.forEach(item => item.classList.remove('active'));
+                
+                // Adicionar classe active ao link clicado
+                e.target.closest('.nav-link').classList.add('active');
+                
+                // Obter ID da seção alvo
+                const targetId = e.target.closest('.nav-link').getAttribute('data-target');
+                
+                // Ocultar todas as seções
+                this.pageSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                
+                // Mostrar seção alvo
+                document.getElementById(targetId).classList.add('active');
+                
+                // Atualizar título da página
+                const pageTitleMap = {
+                    'dashboard': 'Dashboard',
+                    'client-management': 'Gestão de Clientes',
+                    'price-registration': 'Cadastro de Preços',
+                    'os-management': 'Gestão de OS'
+                };
+                this.pageTitle.textContent = pageTitleMap[targetId] || 'IFIX BOITUVA';
+                
+                // Fechar sidebar em mobile
+                if (window.innerWidth <= 1024) {
+                    this.sidebar.classList.remove('open');
+                }
+            }
+            
+            // ===== FUNÇÕES DE ABAS =====
+            switchTab(e) {
+                const tabId = e.target.getAttribute('data-tab');
+                
+                // Remover classe active de todas as abas
+                this.tabs.forEach(t => t.classList.remove('active'));
+                
+                // Adicionar classe active à aba clicada
+                e.target.classList.add('active');
+                
+                // Ocultar todos os conteúdos de abas
+                this.tabContents.forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                // Mostrar conteúdo da aba clicada
+                document.getElementById(tabId).classList.add('active');
+            }
+            
+            // ===== FUNÇÕES DE MODAIS =====
+            openClientModal(clientId) {
+                this.currentClientId = clientId;
+                const client = this.clients.find(c => c.id === clientId);
+                
+                if (client) {
+                    // Preencher dados do cliente
+                    document.getElementById('modal-client-name').value = client.name;
+                    document.getElementById('modal-client-document').value = client.document;
+                    document.getElementById('modal-client-phone').value = client.phone;
+                    document.getElementById('modal-client-address').value = client.address;
+                    document.getElementById('client-total-spent').textContent = `R$ ${client.totalSpent.toFixed(2)}`;
+                    
+                    // Carregar histórico do cliente
+                    this.loadClientHistory(clientId);
+                    
+                    // Mostrar modal
+                    this.clientModal.style.display = 'flex';
+                }
+            }
+            
+            openOSModal(osId) {
+                this.currentOSId = osId;
+                const os = this.serviceOrders.find(o => o.id === osId);
+                
+                if (os) {
+                    const client = this.clients.find(c => c.id === os.clientId);
+                    
+                    // Atualizar título do modal
+                    document.getElementById('os-modal-title').textContent = `Ordem de Serviço ${os.protocol}`;
+                    
+                    // Preencher dados do cliente
+                    if (client) {
+                        document.getElementById('modal-client-name-os').textContent = client.name;
+                        document.getElementById('modal-client-whatsapp-os').textContent = client.phone;
+                        document.getElementById('modal-client-cpf-os').textContent = client.document;
+                    }
+                    
+                    // Preencher dados da OS
+                    document.getElementById('os-status-modal').value = os.status;
+                    document.getElementById('os-equipment-modal').value = os.equipment;
+                    document.getElementById('modal-service-desc').textContent = os.serviceDescription;
+                    document.getElementById('modal-total-estimated').textContent = `R$ ${os.serviceValue.toFixed(2)}`;
+                    
+                    // Preencher checklist
+                    this.populateModalChecklist(os.checklist);
+                    
+                    // Mostrar modal
+                    this.osModal.style.display = 'flex';
+                }
+            }
+            
+            closeAllModals() {
+                this.modals.forEach(modal => {
+                    modal.style.display = 'none';
+                });
+            }
+            
+            // ===== FUNÇÕES DE FORMULÁRIOS =====
+            handleNewClient(e) {
+                e.preventDefault();
+                
+                const newClient = {
+                    id: this.clients.length + 1,
+                    name: document.getElementById('client-name').value,
+                    document: document.getElementById('client-document').value,
+                    phone: document.getElementById('client-phone').value,
+                    email: document.getElementById('client-email').value,
+                    address: document.getElementById('client-address').value,
+                    registrationDate: new Date().toLocaleDateString('pt-BR'),
+                    totalSpent: 0
+                };
+                
+                this.clients.push(newClient);
+                this.loadClientsTable();
+                this.populateClientSelect();
+                this.newClientForm.reset();
+                
+                alert('Cliente cadastrado com sucesso!');
+            }
+            
+            handleNewService(e) {
+                e.preventDefault();
+                
+                const newService = {
+                    id: this.services.length + 1,
+                    name: document.getElementById('service-name').value,
+                    description: document.getElementById('service-description').value,
+                    priceCPF: parseFloat(document.getElementById('service-price-cpf').value),
+                    priceCNPJ: parseFloat(document.getElementById('service-price-cnpj').value)
+                };
+                
+                this.services.push(newService);
+                this.loadServicesTable();
+                this.populateServicesChecklist();
+                this.priceForm.reset();
+                
+                alert('Serviço cadastrado com sucesso!');
+            }
+            
+            handleNewOS(e) {
+                e.preventDefault();
+                
+                // Coletar dados do checklist
+                const checklist = {};
+                document.querySelectorAll('.checklist-item select').forEach(select => {
+                    const testName = select.getAttribute('data-test');
+                    checklist[testName] = select.value;
+                });
+                
+                // Coletar serviços selecionados
+                const selectedServices = [];
+                document.querySelectorAll('.service-checkbox:checked').forEach(checkbox => {
+                    selectedServices.push(checkbox.value);
+                });
+                
+                const clientId = parseInt(document.getElementById('os-client').value);
+                const client = this.clients.find(c => c.id === clientId);
+                
+                const newOS = {
+                    id: this.serviceOrders.length + 1,
+                    protocol: `2023-${(1000 + this.serviceOrders.length + 1).toString().slice(1)}`,
+                    clientId: clientId,
+                    clientName: client ? client.name : 'Cliente não encontrado',
+                    equipment: document.getElementById('os-equipment').value,
+                    status: 'waiting',
+                    entryDate: document.getElementById('os-date').value,
+                    serviceDescription: document.getElementById('os-description').value,
+                    serviceValue: parseFloat(document.getElementById('os-service-value').value) || 0,
+                    checklist: checklist,
+                    selectedServices: selectedServices
+                };
+                
+                this.serviceOrders.push(newOS);
+                this.loadOSTable();
+                this.loadDashboardOS();
+                this.osForm.reset();
+                this.setCurrentDateTime();
+                
+                alert('Ordem de Serviço cadastrada com sucesso!');
+            }
+            
+            updateClientProfile(e) {
+                e.preventDefault();
+                
+                const clientIndex = this.clients.findIndex(c => c.id === this.currentClientId);
+                if (clientIndex !== -1) {
+                    this.clients[clientIndex].name = document.getElementById('modal-client-name').value;
+                    this.clients[clientIndex].document = document.getElementById('modal-client-document').value;
+                    this.clients[clientIndex].phone = document.getElementById('modal-client-phone').value;
+                    this.clients[clientIndex].address = document.getElementById('modal-client-address').value;
+                    
+                    this.loadClientsTable();
+                    this.populateClientSelect();
+                    alert('Dados do cliente atualizados com sucesso!');
+                }
+            }
+            
+            // ===== FUNÇÕES DE TABELAS =====
+            loadClientsTable() {
+                this.clientsTableBody.innerHTML = '';
+                
+                this.clients.forEach(client => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${client.name}</td>
+                        <td>${client.document}</td>
+                        <td>${client.phone}</td>
+                        <td>${client.registrationDate}</td>
+                        <td>
+                            <button class="btn-icon view-client" data-id="${client.id}" title="Perfil e Histórico">
+                                <i class="fas fa-user-circle"></i>
+                            </button>
+                            <button class="btn-icon edit-client" data-id="${client.id}" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    `;
+                    this.clientsTableBody.appendChild(row);
+                });
+                
+                // Adicionar event listeners aos botões
+                document.querySelectorAll('.view-client').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const clientId = parseInt(e.target.closest('button').getAttribute('data-id'));
+                        this.openClientModal(clientId);
+                    });
+                });
+            }
+            
+            loadServicesTable() {
+                this.servicesTableBody.innerHTML = '';
+                
+                this.services.forEach(service => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${service.name}</td>
+                        <td>R$ ${service.priceCPF.toFixed(2)}</td>
+                        <td>R$ ${service.priceCNPJ.toFixed(2)}</td>
+                        <td>${service.description}</td>
+                        <td>
+                            <button class="btn-icon edit-service" data-id="${service.id}" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon delete-service" data-id="${service.id}" title="Excluir">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    this.servicesTableBody.appendChild(row);
+                });
+            }
+            
+            loadOSTable() {
+                this.osTableBody.innerHTML = '';
+                
+                this.serviceOrders.forEach(os => {
+                    const statusText = this.getStatusText(os.status);
+                    const statusClass = `status-${os.status}`;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${os.protocol}</td>
+                        <td>${os.clientName}</td>
+                        <td>${os.equipment}</td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>${os.entryDate}</td>
+                        <td>
+                            <button class="btn-icon view-os" data-id="${os.id}" title="Ver OS">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn-icon edit-os" data-id="${os.id}" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    `;
+                    this.osTableBody.appendChild(row);
+                });
+                
+                // Adicionar event listeners aos botões
+                document.querySelectorAll('.view-os').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const osId = parseInt(e.target.closest('button').getAttribute('data-id'));
+                        this.openOSModal(osId);
+                    });
+                });
+            }
+            
+            loadDashboardOS() {
+                this.dashboardOsBody.innerHTML = '';
+                
+                // Mostrar apenas as últimas 3 OS
+                const recentOS = this.serviceOrders.slice(-3).reverse();
+                
+                recentOS.forEach(os => {
+                    const statusText = this.getStatusText(os.status);
+                    const statusClass = `status-${os.status}`;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${os.protocol}</td>
+                        <td>${os.clientName}</td>
+                        <td>${os.equipment}</td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>
+                            <button class="btn-icon view-os" data-id="${os.id}" title="Ver OS">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    `;
+                    this.dashboardOsBody.appendChild(row);
+                });
+                
+                // Adicionar event listeners aos botões
+                document.querySelectorAll('#dashboard-os-body .view-os').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const osId = parseInt(e.target.closest('button').getAttribute('data-id'));
+                        this.openOSModal(osId);
+                    });
+                });
+            }
+            
+            loadClientHistory(clientId) {
+                this.clientHistoryBody.innerHTML = '';
+                
+                const clientHistory = this.clientHistory.filter(h => h.clientId === clientId);
+                
+                clientHistory.forEach(history => {
+                    const statusText = this.getStatusText(history.status);
+                    const statusClass = `status-${history.status}`;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${history.osId}</td>
+                        <td>${history.date}</td>
+                        <td>${history.service}</td>
+                        <td>R$ ${history.value.toFixed(2)}</td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>
+                            <button class="btn btn-small btn-primary">Ver OS</button>
+                        </td>
+                    `;
+                    this.clientHistoryBody.appendChild(row);
+                });
+            }
+            
+            // ===== FUNÇÕES DE PESQUISA E FILTRO =====
+            filterClients() {
+                const searchTerm = this.searchClientsInput.value.toLowerCase();
+                
+                this.clientsTableBody.innerHTML = '';
+                
+                const filteredClients = this.clients.filter(client => 
+                    client.name.toLowerCase().includes(searchTerm) ||
+                    client.document.includes(searchTerm) ||
+                    client.phone.includes(searchTerm)
+                );
+                
+                filteredClients.forEach(client => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${client.name}</td>
+                        <td>${client.document}</td>
+                        <td>${client.phone}</td>
+                        <td>${client.registrationDate}</td>
+                        <td>
+                            <button class="btn-icon view-client" data-id="${client.id}" title="Perfil e Histórico">
+                                <i class="fas fa-user-circle"></i>
+                            </button>
+                            <button class="btn-icon edit-client" data-id="${client.id}" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    `;
+                    this.clientsTableBody.appendChild(row);
+                });
+                
+                // Re-adicionar event listeners
+                document.querySelectorAll('.view-client').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const clientId = parseInt(e.target.closest('button').getAttribute('data-id'));
+                        this.openClientModal(clientId);
+                    });
+                });
+            }
+            
+            filterOS() {
+                const searchTerm = this.searchOsInput.value.toLowerCase();
+                
+                this.osTableBody.innerHTML = '';
+                
+                const filteredOS = this.serviceOrders.filter(os => 
+                    os.protocol.toLowerCase().includes(searchTerm) ||
+                    os.clientName.toLowerCase().includes(searchTerm) ||
+                    os.equipment.toLowerCase().includes(searchTerm)
+                );
+                
+                filteredOS.forEach(os => {
+                    const statusText = this.getStatusText(os.status);
+                    const statusClass = `status-${os.status}`;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${os.protocol}</td>
+                        <td>${os.clientName}</td>
+                        <td>${os.equipment}</td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>${os.entryDate}</td>
+                        <td>
+                            <button class="btn-icon view-os" data-id="${os.id}" title="Ver OS">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn-icon edit-os" data-id="${os.id}" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    `;
+                    this.osTableBody.appendChild(row);
+                });
+                
+                // Re-adicionar event listeners
+                document.querySelectorAll('.view-os').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const osId = parseInt(e.target.closest('button').getAttribute('data-id'));
+                        this.openOSModal(osId);
+                    });
+                });
+            }
+            
+            filterOSByStatus(e) {
+                const status = e.target.getAttribute('data-status');
+                
+                if (status === 'all') {
+                    this.loadOSTable();
+                    return;
+                }
+                
+                this.osTableBody.innerHTML = '';
+                
+                const filteredOS = this.serviceOrders.filter(os => os.status === status);
+                
+                filteredOS.forEach(os => {
+                    const statusText = this.getStatusText(os.status);
+                    const statusClass = `status-${os.status}`;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${os.protocol}</td>
+                        <td>${os.clientName}</td>
+                        <td>${os.equipment}</td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>${os.entryDate}</td>
+                        <td>
+                            <button class="btn-icon view-os" data-id="${os.id}" title="Ver OS">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn-icon edit-os" data-id="${os.id}" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    `;
+                    this.osTableBody.appendChild(row);
+                });
+                
+                // Re-adicionar event listeners
+                document.querySelectorAll('.view-os').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const osId = parseInt(e.target.closest('button').getAttribute('data-id'));
+                        this.openOSModal(osId);
+                    });
+                });
+            }
+            
+            // ===== FUNÇÕES AUXILIARES =====
+            populateClientSelect() {
+                this.osClientSelect.innerHTML = '<option value="">Selecione um cliente...</option>';
+                
+                this.clients.forEach(client => {
+                    const option = document.createElement('option');
+                    option.value = client.id;
+                    option.textContent = `${client.name} (${client.document})`;
+                    this.osClientSelect.appendChild(option);
+                });
+            }
+            
+            populateTechnicalChecklist() {
+                const checklistItems = [
+                    'Wi-Fi', 'Bluetooth', 'Motor vibra', 'Flash', 'Tela / Touch',
+                    'Sensor de presença', 'Digital (biometria)', 'Chip / Ligação',
+                    'Conector de carga', 'Microfone', 'Câmera frontal',
+                    'Botão power e volume', 'Conexão 3G', 'Câmera traseira',
+                    'Alto-falante auricular'
+                ];
+                
+                this.technicalChecklist.innerHTML = '';
+                
+                checklistItems.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'checklist-item';
+                    
+                    const testName = item.toLowerCase().replace(/[\/\s]/g, '_').replace(/[^a-z0-9_]/g, '');
+                    
+                    div.innerHTML = `
+                        <label>${item}</label>
+                        <select class="form-control" data-test="${testName}">
+                            <option value="">Selecione...</option>
+                            <option value="OK">OK</option>
+                            <option value="NOK">NOK</option>
+                        </select>
+                    `;
+                    this.technicalChecklist.appendChild(div);
+                });
+            }
+            
+            populateServicesChecklist() {
+                this.servicesChecklist.innerHTML = '';
+                
+                this.services.forEach(service => {
+                    const div = document.createElement('div');
+                    div.className = 'form-group';
+                    div.style.marginBottom = '10px';
+                    
+                    div.innerHTML = `
+                        <label style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" class="service-checkbox" value="${service.name}">
+                            ${service.name} - R$ ${service.priceCPF.toFixed(2)} (CPF) / R$ ${service.priceCNPJ.toFixed(2)} (CNPJ)
+                        </label>
+                    `;
+                    this.servicesChecklist.appendChild(div);
+                });
+            }
+            
+            populateModalChecklist(checklist) {
+                const container = document.getElementById('modal-checklist-container');
+                container.innerHTML = '';
+                
+                for (const [test, result] of Object.entries(checklist)) {
+                    const div = document.createElement('div');
+                    div.className = 'checklist-item';
+                    
+                    // Formatar nome do teste
+                    const testName = test.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    
+                    div.innerHTML = `
+                        <label>${testName}</label>
+                        <div class="form-control" style="background-color: var(--graphite-black); color: ${result === 'OK' ? '#4CAF50' : '#F44336'};">${result}</div>
+                    `;
+                    container.appendChild(div);
+                }
+            }
+            
+            setCurrentDateTime() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                
+                document.getElementById('os-date').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            }
+            
+            toggleWaterTimeField() {
+                const value = this.osWaterContact.value;
+                this.waterTimeGroup.style.display = value === 'yes' ? 'block' : 'none';
+            }
+            
+            getStatusText(status) {
+                const statusMap = {
+                    'waiting': 'Aguardando Análise',
+                    'analysis': 'Em Análise',
+                    'approval': 'Aguardando Aprovação',
+                    'maintenance': 'Em Manutenção',
+                    'ready': 'Pronto',
+                    'delivered': 'Entregue'
+                };
+                
+                return statusMap[status] || status;
+            }
+            
+            // ===== FUNÇÕES DE AÇÃO =====
+            updateOSStatus(e) {
+                const newStatus = e.target.value;
+                const osIndex = this.serviceOrders.findIndex(o => o.id === this.currentOSId);
+                
+                if (osIndex !== -1) {
+                    this.serviceOrders[osIndex].status = newStatus;
+                    this.loadOSTable();
+                    this.loadDashboardOS();
+                    
+                    // Atualizar histórico do cliente se necessário
+                    const historyIndex = this.clientHistory.findIndex(h => h.osId === this.currentOSId);
+                    if (historyIndex !== -1) {
+                        this.clientHistory[historyIndex].status = newStatus;
+                    }
+                }
+            }
+            
+            markOSAsReady() {
+                this.updateOSStatus({ target: { value: 'ready' } });
+                alert('OS marcada como PRONTA!');
+            }
+            
+            deliverDevice() {
+                this.updateOSStatus({ target: { value: 'delivered' } });
+                alert('Aparelho marcado como ENTREGUE!');
+            }
+            
+            // ===== FUNÇÕES DE DASHBOARD =====
+            updateDashboardStats() {
+                // Atualizar ganhos mensais (exemplo)
+                const currentMonth = new Date().getMonth();
+                const monthlyEarnings = this.serviceOrders
+                    .filter(os => {
+                        const osDate = new Date(os.entryDate);
+                        return osDate.getMonth() === currentMonth && os.status === 'delivered';
+                    })
+                    .reduce((total, os) => total + os.serviceValue, 0);
+                
+                document.querySelector('.stat-card:nth-child(1) .value').textContent = `R$ ${monthlyEarnings.toFixed(2)}`;
+                
+                // Atualizar total de serviços
+                document.querySelector('.stat-card:nth-child(2) .value').textContent = this.serviceOrders.length.toString();
+                
+                // Atualizar total de clientes
+                document.querySelector('.stat-card:nth-child(3) .value').textContent = this.clients.length.toString();
+            }
+        }
+        
+        // ===== INICIALIZAR SISTEMA =====
+        document.addEventListener('DOMContentLoaded', () => {
+            const ifixSystem = new IFIXSystem();
+            window.ifixSystem = ifixSystem;
+            
+            // Atualizar estatísticas do dashboard
+            ifixSystem.updateDashboardStats();
+        });
+    </script>
+</body>
+</html>
