@@ -1,664 +1,900 @@
 // components/orderservice.js
-import { db } from '../databank/bankservice.js';
-
-export async function renderOrderService() {
-    const contentArea = document.querySelector('#ordensContent');
+window.OrderServiceModule = (function() {
+    let selectedOSId = null;
     
-    try {
-        const orders = await db.orders;
-        const clients = await db.clients;
-        const services = await db.services;
-        
-        contentArea.innerHTML = `
-            <div class="os-header mb-4">
-                <div class="d-flex justify-between align-center">
-                    <div>
-                        <h2 class="mb-2">Gestão de Ordens de Serviço</h2>
-                        <p class="text-light">Controle de ordens de serviço e acompanhamento</p>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-secondary" onclick="exportOSList()">
-                            <i class="fas fa-file-export"></i>
-                            Exportar
-                        </button>
-                        <button class="btn btn-primary" onclick="openNewOSModal()">
-                            <i class="fas fa-plus"></i>
-                            Nova OS
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filtros e Busca -->
-            <div class="card mb-4">
-                <div class="grid grid-4 gap-3">
-                    <div class="form-group">
-                        <label class="form-label">Buscar</label>
-                        <input type="text" class="form-control" id="orderSearchInput" 
-                               placeholder="Protocolo, Cliente, Equipamento..."
-                               onkeyup="filterOrders()">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Status</label>
-                        <select class="form-control" id="statusFilter" onchange="filterOrders()">
-                            <option value="">Todos os status</option>
-                            <option value="Aguardando análise">Aguardando análise</option>
-                            <option value="Em análise">Em análise</option>
-                            <option value="Aguardando aprovação">Aguardando aprovação</option>
-                            <option value="Em manutenção">Em manutenção</option>
-                            <option value="Pronto">Pronto</option>
-                            <option value="Entregue">Entregue</option>
-                            <option value="Cancelado">Cancelado</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Data Inicial</label>
-                        <input type="date" class="form-control" id="dateStartFilter" onchange="filterOrders()">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Data Final</label>
-                        <input type="date" class="form-control" id="dateEndFilter" onchange="filterOrders()">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Estatísticas Rápidas -->
-            <div class="grid grid-4 mb-4">
-                <div class="card">
-                    <div class="d-flex align-center justify-between">
-                        <div>
-                            <h4 class="mb-1">Aguardando</h4>
-                            <div class="stat-value text-warning">${countOrdersByStatus(orders, 'Aguardando análise')}</div>
-                        </div>
-                        <i class="fas fa-clock text-warning" style="font-size: 2rem;"></i>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="d-flex align-center justify-between">
-                        <div>
-                            <h4 class="mb-1">Em Andamento</h4>
-                            <div class="stat-value text-primary">${countOrdersByStatus(orders, ['Em análise', 'Aguardando aprovação', 'Em manutenção'])}</div>
-                        </div>
-                        <i class="fas fa-tools text-primary" style="font-size: 2rem;"></i>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="d-flex align-center justify-between">
-                        <div>
-                            <h4 class="mb-1">Prontos</h4>
-                            <div class="stat-value text-success">${countOrdersByStatus(orders, 'Pronto')}</div>
-                        </div>
-                        <i class="fas fa-check-circle text-success" style="font-size: 2rem;"></i>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="d-flex align-center justify-between">
-                        <div>
-                            <h4 class="mb-1">Entregues</h4>
-                            <div class="stat-value text-info">${countOrdersByStatus(orders, 'Entregue')}</div>
-                        </div>
-                        <i class="fas fa-box text-info" style="font-size: 2rem;"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tabela de OS -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-clipboard-list"></i>
-                        Ordens de Serviço
-                    </h3>
-                    <div class="d-flex align-center gap-2">
-                        <span class="text-light" id="orderCount">${orders.length} ordens encontradas</span>
-                        <button class="btn btn-sm btn-outline" onclick="refreshOrders()">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="table-container">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Protocolo</th>
-                                    <th>Cliente</th>
-                                    <th>Equipamento</th>
-                                    <th>Status</th>
-                                    <th>Data Entrada</th>
-                                    <th>Valor</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ordersTableBody">
-                                ${renderOrdersTable(orders, clients)}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        setupOrderEvents();
-        
-    } catch (error) {
-        console.error('Erro ao renderizar Gestão de OS:', error);
-        contentArea.innerHTML = `
-            <div class="card">
-                <div class="text-center" style="padding: 3rem;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #F44336;"></i>
-                    <h3 class="mt-3">Erro ao carregar ordens de serviço</h3>
-                    <p class="text-light mt-2">${error.message}</p>
-                </div>
-            </div>
-        `;
-    }
-}
-
-function countOrdersByStatus(orders, status) {
-    if (Array.isArray(status)) {
-        return orders.filter(order => status.includes(order.status)).length;
-    }
-    return orders.filter(order => order.status === status).length;
-}
-
-function renderOrdersTable(orders, clients) {
-    return orders.map(order => {
-        const client = clients.find(c => c.id === order.clientId);
-        return `
-        <tr data-order-id="${order.id}" data-status="${order.status}">
-            <td>
-                <strong class="text-orange">#${order.protocol}</strong>
-            </td>
-            <td>
-                <div class="d-flex align-center gap-2">
-                    <div class="avatar-sm">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div>
-                        <div>${client?.name || 'Cliente não encontrado'}</div>
-                        <small class="text-light">${client?.phone || ''}</small>
-                    </div>
-                </div>
-            </td>
-            <td>
-                <div>
-                    <div>${order.equipment}</div>
-                    <small class="text-light">${order.brand || ''}</small>
-                </div>
-            </td>
-            <td>
-                <span class="badge ${getStatusBadgeClass(order.status)}">
-                    ${order.status}
-                </span>
-            </td>
-            <td>${formatDate(order.date)}</td>
-            <td>
-                <strong>${formatCurrency(order.value || 0)}</strong>
-            </td>
-            <td>
-                <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-outline" onclick="viewOrderDetails(${order.id})" title="Detalhes">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline" onclick="editOrder(${order.id})" title="Editar">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline" onclick="changeOrderStatus(${order.id})" title="Status">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline" onclick="printOS(${order.id})" title="Imprimir">
-                        <i class="fas fa-print"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-        `;
-    }).join('');
-}
-
-function getStatusBadgeClass(status) {
-    const statusClasses = {
-        'Aguardando análise': 'badge-info',
-        'Em análise': 'badge-primary',
-        'Aguardando aprovação': 'badge-warning',
-        'Em manutenção': 'badge-warning',
-        'Pronto': 'badge-success',
-        'Entregue': 'badge-success',
-        'Cancelado': 'badge-danger'
-    };
-    return statusClasses[status] || 'badge-secondary';
-}
-
-function setupOrderEvents() {
-    window.filterOrders = function() {
-        const searchTerm = document.getElementById('orderSearchInput').value.toLowerCase();
-        const statusFilter = document.getElementById('statusFilter').value;
-        const dateStart = document.getElementById('dateStartFilter').value;
-        const dateEnd = document.getElementById('dateEndFilter').value;
-        
-        const rows = document.querySelectorAll('#ordersTableBody tr');
-        let visibleCount = 0;
-        
-        rows.forEach(row => {
-            const protocol = row.cells[0].textContent.toLowerCase();
-            const client = row.cells[1].textContent.toLowerCase();
-            const equipment = row.cells[2].textContent.toLowerCase();
-            const status = row.dataset.status;
-            const dateText = row.cells[4].textContent;
-            const rowDate = parseDate(dateText);
-            
-            let searchMatch = protocol.includes(searchTerm) || 
-                             client.includes(searchTerm) || 
-                             equipment.includes(searchTerm);
-            let statusMatch = !statusFilter || status === statusFilter;
-            let dateMatch = true;
-            
-            if (dateStart && rowDate < new Date(dateStart)) {
-                dateMatch = false;
-            }
-            if (dateEnd && rowDate > new Date(dateEnd)) {
-                dateMatch = false;
-            }
-            
-            if (searchMatch && statusMatch && dateMatch) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-        
-        document.getElementById('orderCount').textContent = `${visibleCount} ordens encontradas`;
-    };
-    
-    window.refreshOrders = function() {
-        renderOrderService();
-        system.showSuccess('Lista de OS atualizada!');
-    };
-    
-    window.exportOSList = function() {
-        const data = [];
-        const rows = document.querySelectorAll('#ordersTableBody tr:not([style*="display: none"])');
-        
-        rows.forEach(row => {
-            data.push({
-                protocol: row.cells[0].textContent.trim(),
-                cliente: row.cells[1].textContent.trim(),
-                equipamento: row.cells[2].textContent.trim(),
-                status: row.cells[3].textContent.trim(),
-                data: row.cells[4].textContent.trim(),
-                valor: row.cells[5].textContent.trim()
-            });
-        });
-        
-        // Em um sistema real, aqui seria gerado um arquivo Excel ou PDF
-        system.showSuccess(`${data.length} ordens exportadas com sucesso!`);
-        console.log('Dados para exportação:', data);
-    };
-}
-
-window.openNewOSModal = function() {
-    system.showModal('newOS', {
-        title: 'Nova Ordem de Serviço',
-        content: `
-            <div class="new-os-wizard">
-                <div class="wizard-steps mb-4">
-                    <div class="steps">
-                        <div class="step active">1. Cliente</div>
-                        <div class="step">2. Equipamento</div>
-                        <div class="step">3. Diagnóstico</div>
-                        <div class="step">4. Serviços</div>
-                        <div class="step">5. Finalizar</div>
-                    </div>
-                </div>
-                
-                <div class="wizard-content">
-                    <div class="step-content active" id="step1">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Selecionar Cliente</label>
-                            <select class="form-control" id="clientSelect">
-                                <option value="">Selecione um cliente ou cadastre novo</option>
-                                ${db.clients.map(client => `
-                                    <option value="${client.id}">${client.name} - ${client.cpf} - ${client.phone}</option>
-                                `).join('')}
-                            </select>
-                        </div>
-                        <div class="text-center">
-                            <button class="btn btn-outline" onclick="openNewClientModalFromOS()">
-                                <i class="fas fa-user-plus"></i>
-                                Cadastrar Novo Cliente
+    const module = {
+        render() {
+            return `
+                <div class="os-module">
+                    <div class="module-header">
+                        <h2>Ordem de Serviço</h2>
+                        <div class="header-actions">
+                            <button id="newOSBtn" class="btn btn-primary">
+                                <span>➕ Nova OS</span>
                             </button>
                         </div>
                     </div>
-                </div>
-                
-                <div class="wizard-actions mt-4 d-flex justify-between">
-                    <button class="btn btn-secondary" disabled>Anterior</button>
-                    <button class="btn btn-primary" onclick="nextStep()">Próximo</button>
-                </div>
-            </div>
-        `
-    });
-};
-
-window.viewOrderDetails = async function(orderId) {
-    try {
-        const order = db.orders.find(o => o.id === orderId);
-        const client = db.clients.find(c => c.id === order.clientId);
-        
-        if (!order || !client) {
-            system.showError('Ordem de serviço não encontrada');
-            return;
-        }
-        
-        system.showModal('orderDetails', {
-            title: `OS #${order.protocol} - ${order.equipment}`,
-            content: `
-                <div class="order-details">
-                    <div class="grid grid-2 gap-4 mb-4">
-                        <!-- Dados do Cliente -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h4 class="card-title">
-                                    <i class="fas fa-user"></i>
-                                    Dados do Cliente
-                                </h4>
-                                <button class="btn btn-sm btn-outline" onclick="editClient(${client.id})">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </div>
-                            <div class="card-body">
-                                <div class="info-item">
-                                    <label>Nome:</label>
-                                    <span>${client.name}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>CPF:</label>
-                                    <span>${client.cpf}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>Telefone:</label>
-                                    <span>${client.phone}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>E-mail:</label>
-                                    <span>${client.email || 'Não informado'}</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Status da OS -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h4 class="card-title">
-                                    <i class="fas fa-info-circle"></i>
-                                    Status da Ordem
-                                </h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="info-item">
-                                    <label>Status Atual:</label>
-                                    <span class="badge ${getStatusBadgeClass(order.status)}">${order.status}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>Protocolo:</label>
-                                    <span>${order.protocol}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>Data de Entrada:</label>
-                                    <span>${formatDate(order.date)}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>Data Prevista:</label>
-                                    <span>${order.estimatedDelivery || 'Não definida'}</span>
-                                </div>
-                                
-                                <div class="form-group mt-3">
-                                    <label class="form-label">Alterar Status:</label>
-                                    <select class="form-control" id="statusChangeSelect">
-                                        <option value="Aguardando análise" ${order.status === 'Aguardando análise' ? 'selected' : ''}>Aguardando análise</option>
-                                        <option value="Em análise" ${order.status === 'Em análise' ? 'selected' : ''}>Em análise</option>
-                                        <option value="Aguardando aprovação" ${order.status === 'Aguardando aprovação' ? 'selected' : ''}>Aguardando aprovação</option>
-                                        <option value="Em manutenção" ${order.status === 'Em manutenção' ? 'selected' : ''}>Em manutenção</option>
-                                        <option value="Pronto" ${order.status === 'Pronto' ? 'selected' : ''}>Pronto para retirada</option>
-                                        <option value="Entregue" ${order.status === 'Entregue' ? 'selected' : ''}>Entregue</option>
-                                        <option value="Cancelado" ${order.status === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
-                                    </select>
-                                </div>
-                                <button class="btn btn-primary btn-sm mt-2" onclick="updateOrderStatus(${orderId})">
-                                    <i class="fas fa-sync-alt"></i>
-                                    Atualizar Status
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                     
-                    <!-- Dados do Equipamento -->
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h4 class="card-title">
-                                <i class="fas fa-mobile-alt"></i>
-                                Dados do Equipamento
-                            </h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="grid grid-3 gap-3">
-                                <div class="info-item">
-                                    <label>Equipamento:</label>
-                                    <span>${order.equipment}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>Marca/Modelo:</label>
-                                    <span>${order.brand || 'Não informado'}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>Cor:</label>
-                                    <span>${order.color || 'Não informado'}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>Senha:</label>
-                                    <span>${order.password || 'Não informada'}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>IMEI/Serial:</label>
-                                    <span>${order.imei || 'Não informado'}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>Acessórios:</label>
-                                    <span>${order.accessories || 'Não informados'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Diagnóstico e Serviços -->
-                    <div class="grid grid-2 gap-4 mb-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h4 class="card-title">
-                                    <i class="fas fa-stethoscope"></i>
-                                    Diagnóstico
-                                </h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="form-group">
-                                    <label class="form-label">Defeito Relatado:</label>
-                                    <p>${order.reportedIssue || 'Não informado'}</p>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Diagnóstico Técnico:</label>
-                                    <p>${order.diagnosis || 'Não informado'}</p>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Observações:</label>
-                                    <p>${order.notes || 'Nenhuma observação'}</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="card">
-                            <div class="card-header">
-                                <h4 class="card-title">
-                                    <i class="fas fa-tools"></i>
-                                    Serviços Executados
-                                </h4>
-                            </div>
-                            <div class="card-body">
-                                ${order.services && order.services.length > 0 ? 
-                                    order.services.map(service => `
-                                        <div class="service-item">
-                                            <div class="d-flex justify-between">
-                                                <strong>${service.name}</strong>
-                                                <span class="text-orange">${formatCurrency(service.price)}</span>
-                                            </div>
-                                            ${service.description ? `<small class="text-light">${service.description}</small>` : ''}
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Ordens de Serviço</h3>
+                                    <div class="card-filters">
+                                        <div class="search-box">
+                                            <input type="text" id="osSearch" class="form-control" 
+                                                   placeholder="Buscar por ID, CPF, telefone...">
+                                            <span>🔍</span>
                                         </div>
-                                    `).join('') :
-                                    '<p class="text-light">Nenhum serviço registrado</p>'
-                                }
-                                <div class="total-value mt-3 pt-3 border-top">
-                                    <div class="d-flex justify-between">
-                                        <strong>Valor Total:</strong>
-                                        <strong class="text-orange" style="font-size: 1.2rem;">${formatCurrency(order.value || 0)}</strong>
+                                        <select id="statusFilter" class="form-control">
+                                            <option value="">Todos os status</option>
+                                            <option value="aguardando_analise">Aguardando análise</option>
+                                            <option value="em_analise">Em análise</option>
+                                            <option value="aguardando_aprovacao">Aguardando aprovação</option>
+                                            <option value="em_manutencao">Em manutenção</option>
+                                            <option value="pronto">Pronto</option>
+                                            <option value="entregue">Entregue</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="table-container">
+                                    <table id="osTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Protocolo</th>
+                                                <th>Cliente</th>
+                                                <th>Equipamento</th>
+                                                <th>Status</th>
+                                                <th>Data Entrada</th>
+                                                <th>Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="osTableBody">
+                                            <!-- Dados carregados dinamicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal de Detalhes da OS -->
+                    <div id="osModal" class="modal">
+                        <div class="modal-overlay"></div>
+                        <div class="modal-content wide-modal">
+                            <div class="modal-header">
+                                <h3>Detalhes da Ordem de Serviço</h3>
+                                <button class="modal-close">&times;</button>
+                            </div>
+                            <div class="modal-body" id="osModalBody">
+                                <!-- Conteúdo dinâmico -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal de Nova OS -->
+                    <div id="newOSModal" class="modal">
+                        <div class="modal-overlay"></div>
+                        <div class="modal-content extra-wide-modal">
+                            <div class="modal-header">
+                                <h3>Nova Ordem de Serviço</h3>
+                                <button class="modal-close">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="newOSForm">
+                                    <div class="os-form-container">
+                                        <!-- O formulário será carregado aqui -->
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        },
+        
+        initialize() {
+            this.loadOS();
+            this.setupEventListeners();
+        },
+        
+        loadOS(search = '', status = '') {
+            const orders = window.osData.getOrders({ search, status });
+            const tbody = document.getElementById('osTableBody');
+            
+            if (orders.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center">Nenhuma ordem de serviço encontrada</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = orders.map(order => `
+                <tr>
+                    <td><strong>${order.protocol || order.id}</strong></td>
+                    <td>
+                        <div>${order.clientName || 'N/A'}</div>
+                        <small>${order.clientPhone || ''}</small>
+                    </td>
+                    <td>${order.deviceModel || 'N/A'}</td>
+                    <td>
+                        <span class="badge badge-${this.getStatusColor(order.status)}">
+                            ${this.getStatusText(order.status)}
+                        </span>
+                    </td>
+                    <td>${this.formatDate(order.createdAt)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary view-os" data-id="${order.id}">
+                            👁️ Ver
+                        </button>
+                        <button class="btn btn-sm btn-secondary edit-os" data-id="${order.id}">
+                            ✏️ Editar
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        },
+        
+        getStatusColor(status) {
+            const statusMap = {
+                'aguardando_analise': 'warning',
+                'em_analise': 'info',
+                'aguardando_aprovacao': 'warning',
+                'em_manutencao': 'orange',
+                'pronto': 'success',
+                'entregue': 'gray'
+            };
+            return statusMap[status] || 'gray';
+        },
+        
+        getStatusText(status) {
+            const statusMap = {
+                'aguardando_analise': 'Aguardando análise',
+                'em_analise': 'Em análise',
+                'aguardando_aprovacao': 'Aguardando aprovação',
+                'em_manutencao': 'Em manutenção',
+                'pronto': 'Pronto',
+                'entregue': 'Entregue'
+            };
+            return statusMap[status] || 'Desconhecido';
+        },
+        
+        formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('pt-BR');
+        },
+        
+        setupEventListeners() {
+            // Busca de OS
+            const searchInput = document.getElementById('osSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const status = document.getElementById('statusFilter').value;
+                    this.loadOS(e.target.value, status);
+                });
+            }
+            
+            // Filtro de status
+            const statusFilter = document.getElementById('statusFilter');
+            if (statusFilter) {
+                statusFilter.addEventListener('change', (e) => {
+                    const search = document.getElementById('osSearch').value;
+                    this.loadOS(search, e.target.value);
+                });
+            }
+            
+            // Nova OS
+            const newOSBtn = document.getElementById('newOSBtn');
+            if (newOSBtn) {
+                newOSBtn.addEventListener('click', () => {
+                    this.openNewOSModal();
+                });
+            }
+            
+            // Delegar eventos para os botões de ação na tabela
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('view-os') || 
+                    e.target.parentElement.classList.contains('view-os')) {
+                    const osId = e.target.dataset.id || e.target.parentElement.dataset.id;
+                    this.viewOSDetails(osId);
+                }
+                
+                if (e.target.classList.contains('edit-os') || 
+                    e.target.parentElement.classList.contains('edit-os')) {
+                    const osId = e.target.dataset.id || e.target.parentElement.dataset.id;
+                    this.editOS(osId);
+                }
+            });
+            
+            // Configurar modais
+            this.setupModalCloseListeners();
+        },
+        
+        viewOSDetails(osId) {
+            const order = window.osData.orders.find(o => o.id === osId);
+            if (!order) return;
+            
+            const modalBody = document.getElementById('osModalBody');
+            modalBody.innerHTML = `
+                <div class="os-details">
+                    <div class="row">
+                        <div class="col-12 col-md-6">
+                            <div class="detail-section">
+                                <h4>📋 Ficha do Cliente</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <strong>Nome:</strong> ${order.clientName || 'N/A'}
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>WhatsApp:</strong> ${order.clientPhone || 'N/A'}
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>CPF:</strong> ${order.clientDocument || 'N/A'}
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        
+                        <div class="col-12 col-md-6">
+                            <div class="detail-section">
+                                <h4>🔄 Controle de Status</h4>
+                                <div class="form-group">
+                                    <label class="form-label">Status Atual</label>
+                                    <select id="updateStatus" class="form-control">
+                                        ${window.osData.statusOptions.map(status => `
+                                            <option value="${status.id}" ${order.status === status.id ? 'selected' : ''}>
+                                                ${status.name}
+                                            </option>
+                                        `).join('')}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Equipamento</label>
+                                    <input type="text" id="updateDeviceModel" class="form-control" 
+                                           value="${order.deviceModel || ''}">
+                                </div>
+                                <button id="saveStatusBtn" class="btn btn-primary">Atualizar</button>
+                            </div>
+                        </div>
                     </div>
                     
-                    <!-- Ações -->
-                    <div class="d-flex justify-end gap-2 mt-4">
-                        <button class="btn btn-secondary" onclick="system.closeModal('orderDetails')">
-                            Fechar
+                    <div class="detail-section">
+                        <h4>📝 Laudo de Entrada (Checklist)</h4>
+                        <div class="checklist-grid">
+                            ${this.renderChecklist(order.checklist || {})}
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>🔧 Defeito e Diagnóstico Preliminar</h4>
+                        <div class="form-group">
+                            <label class="form-label">Serviços:</label>
+                            <div class="services-list">
+                                ${(order.services || []).map(service => `<span class="service-tag">${service}</span>`).join('')}
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Notas Internas:</label>
+                            <p>${order.internalNotes || 'Nenhuma nota interna.'}</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Total Estimado:</label>
+                            <h3>R$ ${order.serviceValue?.toFixed(2) || '0,00'}</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button id="markAsReadyBtn" class="btn btn-success" 
+                                ${order.status === 'pronto' ? 'disabled' : ''}>
+                            ✅ Marcar como Pronto
                         </button>
-                        <button class="btn btn-primary" onclick="printOS(${orderId})">
-                            <i class="fas fa-print"></i>
-                            Imprimir OS
+                        <button id="deliverDeviceBtn" class="btn btn-primary" 
+                                ${order.status !== 'pronto' ? 'disabled' : ''}>
+                            📦 Entregar Aparelho
                         </button>
-                        <button class="btn btn-outline" onclick="editOrder(${orderId})">
-                            <i class="fas fa-edit"></i>
-                            Editar OS
-                        </button>
+                        <button id="printOSBtn" class="btn btn-secondary">🖨️ Imprimir OS</button>
                     </div>
                 </div>
-            `
-        });
-    } catch (error) {
-        system.showError('Erro ao carregar detalhes da OS: ' + error.message);
-    }
-};
+            `;
+            
+            // Configurar eventos dos botões
+            selectedOSId = osId;
+            this.setupOSModalEvents(order);
+            this.openOSModal();
+        },
+        
+        renderChecklist(checklist) {
+            const checklistItems = [
+                { key: 'wifi', label: 'Wi-Fi' },
+                { key: 'bluetooth', label: 'Bluetooth' },
+                { key: 'vibration_motor', label: 'Motor vibra' },
+                { key: 'flash', label: 'Flash' },
+                { key: 'screen_touch', label: 'Tela / Touch' },
+                { key: 'proximity_sensor', label: 'Sensor de presença' },
+                { key: 'fingerprint', label: 'Digital (biometria)' },
+                { key: 'sim_calling', label: 'Chip / Ligação' },
+                { key: 'charging_port', label: 'Conector de carga' },
+                { key: 'microphone', label: 'Microfone' },
+                { key: 'front_camera', label: 'Câmera frontal' },
+                { key: 'power_volume_buttons', label: 'Botão power e volume' },
+                { key: 'network_3g', label: 'Conexão 3G' },
+                { key: 'rear_camera', label: 'Câmera traseira' },
+                { key: 'earpiece_speaker', label: 'Alto-falante auricular' }
+            ];
+            
+            return checklistItems.map(item => `
+                <div class="checklist-item">
+                    <strong>${item.label}:</strong>
+                    <span class="checklist-value ${checklist[item.key] === 'OK' ? 'check-ok' : 'check-nok'}">
+                        ${checklist[item.key] || 'N/A'}
+                    </span>
+                </div>
+            `).join('');
+        },
+        
+        setupOSModalEvents(order) {
+            // Atualizar status
+            const saveStatusBtn = document.getElementById('saveStatusBtn');
+            if (saveStatusBtn) {
+                saveStatusBtn.addEventListener('click', () => {
+                    const newStatus = document.getElementById('updateStatus').value;
+                    const deviceModel = document.getElementById('updateDeviceModel').value;
+                    this.updateOSStatus(newStatus, deviceModel);
+                });
+            }
+            
+            // Marcar como pronto
+            const markAsReadyBtn = document.getElementById('markAsReadyBtn');
+            if (markAsReadyBtn) {
+                markAsReadyBtn.addEventListener('click', () => {
+                    this.markAsReady();
+                });
+            }
+            
+            // Entregar aparelho
+            const deliverDeviceBtn = document.getElementById('deliverDeviceBtn');
+            if (deliverDeviceBtn) {
+                deliverDeviceBtn.addEventListener('click', () => {
+                    this.deliverDevice();
+                });
+            }
+            
+            // Imprimir OS
+            const printOSBtn = document.getElementById('printOSBtn');
+            if (printOSBtn) {
+                printOSBtn.addEventListener('click', () => {
+                    this.printOS(order);
+                });
+            }
+        },
+        
+        updateOSStatus(newStatus, deviceModel) {
+            if (!selectedOSId) return;
+            
+            const updates = { 
+                status: newStatus,
+                deviceModel: deviceModel 
+            };
+            
+            const result = window.osData.updateOrder(selectedOSId, updates);
+            
+            if (result) {
+                alert('Status atualizado com sucesso!');
+                this.loadOS();
+                this.closeOSModal();
+            } else {
+                alert('Erro ao atualizar status');
+            }
+        },
+        
+        markAsReady() {
+            if (!selectedOSId) return;
+            
+            const result = window.osData.updateOrder(selectedOSId, { status: 'pronto' });
+            
+            if (result) {
+                alert('OS marcada como pronta!');
+                this.loadOS();
+                this.closeOSModal();
+            } else {
+                alert('Erro ao atualizar OS');
+            }
+        },
+        
+        deliverDevice() {
+            if (!selectedOSId) return;
+            
+            const result = window.osData.updateOrder(selectedOSId, { status: 'entregue' });
+            
+            if (result) {
+                alert('Aparelho marcado como entregue!');
+                this.loadOS();
+                this.closeOSModal();
+            } else {
+                alert('Erro ao atualizar OS');
+            }
+        },
+        
+        printOS(order) {
+            // Em uma aplicação real, isso geraria um PDF
+            // Por enquanto, apenas abrimos uma nova janela com os dados formatados
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>OS ${order.protocol || order.id}</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; padding: 20px; }
+                            .header { text-align: center; margin-bottom: 30px; }
+                            .section { margin-bottom: 20px; }
+                            .section h3 { border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+                            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+                            .footer { margin-top: 50px; text-align: center; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h1>Ordem de Serviço - IFIX</h1>
+                            <h2>${order.protocol || order.id}</h2>
+                        </div>
+                        
+                        <div class="section">
+                            <h3>Dados do Cliente</h3>
+                            <div class="grid">
+                                <div><strong>Nome:</strong> ${order.clientName || 'N/A'}</div>
+                                <div><strong>Telefone:</strong> ${order.clientPhone || 'N/A'}</div>
+                                <div><strong>CPF:</strong> ${order.clientDocument || 'N/A'}</div>
+                                <div><strong>Data:</strong> ${this.formatDate(order.createdAt)}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="section">
+                            <h3>Aparelho</h3>
+                            <p><strong>Modelo:</strong> ${order.deviceModel || 'N/A'}</p>
+                            <p><strong>Senha:</strong> ${order.devicePassword || 'Não informada'}</p>
+                        </div>
+                        
+                        <div class="section">
+                            <h3>Serviços</h3>
+                            <ul>
+                                ${order.services ? order.services.map(s => `<li>${s}</li>`).join('') : '<li>Nenhum serviço especificado</li>'}
+                            </ul>
+                        </div>
+                        
+                        <div class="section">
+                            <h3>Checklist de Entrada</h3>
+                            <div class="grid">
+                                ${Object.entries(order.checklist || {}).map(([key, value]) => `
+                                    <div><strong>${key}:</strong> ${value}</div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <div class="section">
+                            <h3>Valor</h3>
+                            <p><strong>Total:</strong> R$ ${order.serviceValue?.toFixed(2) || '0,00'}</p>
+                        </div>
+                        
+                        <div class="footer">
+                            <p>_________________________________</p>
+                            <p>Assinatura do Cliente</p>
+                            <p>Data: ${new Date().toLocaleDateString('pt-BR')}</p>
+                        </div>
+                        
+                        <script>
+                            window.onload = function() {
+                                window.print();
+                            }
+                        </script>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+        },
+        
+        openNewOSModal() {
+            const formContainer = document.querySelector('#newOSForm .os-form-container');
+            formContainer.innerHTML = this.renderNewOSForm();
+            this.setupNewOSFormEvents();
+            this.openNewOSModalWindow();
+        },
+        
+        renderNewOSForm() {
+            return `
+                <div class="row">
+                    <div class="col-12 col-md-6">
+                        <div class="form-section">
+                            <h4>📱 Dados do Cliente</h4>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Buscar Cliente Existente</label>
+                                <select id="existingClient" class="form-control">
+                                    <option value="">Selecione um cliente...</option>
+                                    ${window.crmData.clients.map(client => `
+                                        <option value="${client.id}">
+                                            ${client.name} - ${client.phone}
+                                        </option>
+                                    `).join('')}
+                                </select>
+                            </div>
 
-window.updateOrderStatus = async function(orderId) {
-    const select = document.getElementById('statusChangeSelect');
-    const newStatus = select.value;
-    
-    try {
-        await db.updateOrderStatus(orderId, newStatus);
-        system.showSuccess(`Status da OS #${orderId} atualizado para "${newStatus}"`);
-        system.closeModal('orderDetails');
-        renderOrderService();
-    } catch (error) {
-        system.showError('Erro ao atualizar status: ' + error.message);
-    }
-};
+                            <div class="form-group">
+                                <label class="form-label">Nome Completo *</label>
+                                <input type="text" id="clientName" class="form-control" required>
+                            </div>
 
-window.printOS = function(orderId) {
-    const order = db.orders.find(o => o.id === orderId);
-    const client = db.clients.find(c => c.id === order.clientId);
-    
-    // Em um sistema real, aqui seria gerado um PDF
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>OS #${order.protocol} - iFix Boituva</title>
-                <style>
-                    body { font-family: Arial, sans-serif; margin: 20px; }
-                    .header { text-align: center; margin-bottom: 30px; }
-                    .section { margin-bottom: 20px; }
-                    .label { font-weight: bold; }
-                    .value { margin-bottom: 10px; }
-                    .total { font-size: 18px; font-weight: bold; margin-top: 20px; }
-                    .signature { margin-top: 50px; border-top: 1px solid #000; padding-top: 10px; }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h1>iFix Boituva</h1>
-                    <h2>Ordem de Serviço #${order.protocol}</h2>
+                            <div class="form-group">
+                                <label class="form-label">Telefone (WhatsApp) *</label>
+                                <input type="tel" id="clientPhone" class="form-control" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">CPF/CNPJ</label>
+                                <input type="text" id="clientDocument" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <div class="form-section">
+                            <h4>📲 Dados do Aparelho</h4>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Modelo do iPhone *</label>
+                                <select id="deviceModel" class="form-control" required>
+                                    <option value="">Selecione o modelo...</option>
+                                    ${window.phoneData.models.map(model => `
+                                        <option value="${model}">${model}</option>
+                                    `).join('')}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Senha do Aparelho</label>
+                                <input type="text" id="devicePassword" class="form-control">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Data de Entrada</label>
+                                <input type="date" id="entryDate" class="form-control" value="${new Date().toISOString().split('T')[0]}">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="section">
-                    <h3>Dados do Cliente</h3>
-                    <div class="value"><span class="label">Nome:</span> ${client.name}</div>
-                    <div class="value"><span class="label">CPF:</span> ${client.cpf}</div>
-                    <div class="value"><span class="label">Telefone:</span> ${client.phone}</div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-section">
+                            <h4>🔍 Condições Iniciais do Aparelho</h4>
+                            
+                            <div class="row">
+                                <div class="col-12 col-md-3">
+                                    <div class="form-group">
+                                        <label class="form-label">Chegou ligado?</label>
+                                        <select id="arrivedOn" class="form-control">
+                                            <option value="">Selecione</option>
+                                            <option value="Sim">Sim</option>
+                                            <option value="Não">Não</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-3">
+                                    <div class="form-group">
+                                        <label class="form-label">Retirou chip e capinha?</label>
+                                        <select id="removedCase" class="form-control">
+                                            <option value="">Selecione</option>
+                                            <option value="Sim">Sim</option>
+                                            <option value="Não">Não</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-3">
+                                    <div class="form-group">
+                                        <label class="form-label">Já passou por manutenção?</label>
+                                        <select id="previousRepair" class="form-control">
+                                            <option value="">Selecione</option>
+                                            <option value="Sim">Sim</option>
+                                            <option value="Não">Não</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-3">
+                                    <div class="form-group">
+                                        <label class="form-label">Contato com água?</label>
+                                        <select id="waterDamage" class="form-control">
+                                            <option value="">Selecione</option>
+                                            <option value="Sim">Sim</option>
+                                            <option value="Não">Não</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group" id="waterTimeGroup" style="display: none;">
+                                <label class="form-label">Há quanto tempo?</label>
+                                <input type="text" id="waterTime" class="form-control">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="section">
-                    <h3>Dados do Equipamento</h3>
-                    <div class="value"><span class="label">Equipamento:</span> ${order.equipment}</div>
-                    <div class="value"><span class="label">Defeito Relatado:</span> ${order.reportedIssue}</div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-section">
+                            <h4>✅ Testes de Entrada (Checklist Técnico)</h4>
+                            
+                            <div class="checklist-grid-form">
+                                ${this.renderChecklistInputs()}
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Foi possível realizar todos os testes?</label>
+                                <select id="allTestsCompleted" class="form-control">
+                                    <option value="">Selecione</option>
+                                    <option value="Sim">Sim</option>
+                                    <option value="Não">Não</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="section">
-                    <h3>Serviços</h3>
-                    ${order.services ? order.services.map(s => `
-                        <div class="value">• ${s.name}: ${formatCurrency(s.price)}</div>
-                    `).join('') : 'Nenhum serviço registrado'}
-                    <div class="total">Total: ${formatCurrency(order.value || 0)}</div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-section">
+                            <h4>🔧 Serviços e Diagnóstico</h4>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Serviços Solicitados</label>
+                                <select id="services" class="form-control" multiple style="height: 120px;">
+                                    ${window.phoneData.services.map(service => `
+                                        <option value="${service}">${service}</option>
+                                    `).join('')}
+                                </select>
+                                <small class="form-hint">Pressione Ctrl para selecionar múltiplos serviços</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Diagnóstico Preliminar</label>
+                                <textarea id="preliminaryDiagnosis" class="form-control" rows="3"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Notas Internas</label>
+                                <textarea id="internalNotes" class="form-control" rows="3"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Observações</label>
+                                <textarea id="observations" class="form-control" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="signature">
-                    <p>Data: ${new Date().toLocaleDateString('pt-BR')}</p>
-                    <p>_________________________________________</p>
-                    <p>Assinatura do Cliente</p>
+
+                <div class="row">
+                    <div class="col-12 col-md-6">
+                        <div class="form-section">
+                            <h4>💰 Valores</h4>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Valor do Serviço (R$)</label>
+                                <input type="number" id="serviceValue" class="form-control" step="0.01" min="0">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
-                <script>
-                    window.onload = function() {
-                        window.print();
-                        setTimeout(function() {
-                            window.close();
-                        }, 1000);
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">💾 Salvar OS</button>
+                    <button type="button" class="btn btn-secondary cancel-new-os">❌ Cancelar</button>
+                </div>
+            `;
+        },
+        
+        renderChecklistInputs() {
+            const checklistItems = [
+                { id: 'wifi', label: 'Wi-Fi' },
+                { id: 'bluetooth', label: 'Bluetooth' },
+                { id: 'vibration_motor', label: 'Motor vibra' },
+                { id: 'flash', label: 'Flash' },
+                { id: 'screen_touch', label: 'Tela / Touch' },
+                { id: 'proximity_sensor', label: 'Sensor de presença' },
+                { id: 'fingerprint', label: 'Digital (biometria)' },
+                { id: 'sim_calling', label: 'Chip / Ligação' },
+                { id: 'charging_port', label: 'Conector de carga' },
+                { id: 'microphone', label: 'Microfone' },
+                { id: 'front_camera', label: 'Câmera frontal' },
+                { id: 'power_volume_buttons', label: 'Botão power e volume' },
+                { id: 'network_3g', label: 'Conexão 3G' },
+                { id: 'rear_camera', label: 'Câmera traseira' },
+                { id: 'earpiece_speaker', label: 'Alto-falante auricular' }
+            ];
+
+            return checklistItems.map(item => `
+                <div class="checklist-input">
+                    <label>${item.label}</label>
+                    <select id="checklist_${item.id}" class="form-control">
+                        <option value="">Selecione</option>
+                        <option value="OK">OK</option>
+                        <option value="NOK">NOK</option>
+                    </select>
+                </div>
+            `).join('');
+        },
+        
+        setupNewOSFormEvents() {
+            // Preencher dados do cliente existente
+            const existingClientSelect = document.getElementById('existingClient');
+            if (existingClientSelect) {
+                existingClientSelect.addEventListener('change', (e) => {
+                    const clientId = e.target.value;
+                    if (clientId) {
+                        const client = window.crmData.clients.find(c => c.id === clientId);
+                        if (client) {
+                            document.getElementById('clientName').value = client.name;
+                            document.getElementById('clientPhone').value = client.phone;
+                            document.getElementById('clientDocument').value = client.document || '';
+                        }
                     }
-                </script>
-            </body>
-        </html>
-    `);
-    printWindow.document.close();
-};
-
-window.editOrder = function(orderId) {
-    system.showModal('editOrder', {
-        title: 'Editar Ordem de Serviço',
-        content: `
-            <div class="text-center" style="padding: 3rem;">
-                <i class="fas fa-tools" style="font-size: 3rem; color: var(--color-orange-primary);"></i>
-                <h3 class="mt-3">Funcionalidade em Desenvolvimento</h3>
-                <p class="text-light mt-2">A edição completa da OS estará disponível em breve.</p>
-                <button class="btn btn-primary mt-3" onclick="system.closeModal('editOrder')">
-                    Entendi
-                </button>
-            </div>
-        `
-    });
-};
-
-// Funções auxiliares
-function formatCurrency(value) {
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-    }).format(value);
-}
-
-function formatDate(date) {
-    return new Intl.DateTimeFormat('pt-BR').format(new Date(date));
-}
-
-function parseDate(dateString) {
-    const [day, month, year] = dateString.split('/');
-    return new Date(year, month - 1, day);
-}
+                });
+            }
+            
+            // Mostrar/ocultar campo de tempo de contato com água
+            const waterDamageSelect = document.getElementById('waterDamage');
+            if (waterDamageSelect) {
+                waterDamageSelect.addEventListener('change', (e) => {
+                    const waterTimeGroup = document.getElementById('waterTimeGroup');
+                    waterTimeGroup.style.display = e.target.value === 'Sim' ? 'block' : 'none';
+                });
+            }
+            
+            // Cancelar nova OS
+            const cancelBtn = document.querySelector('.cancel-new-os');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => {
+                    this.closeNewOSModal();
+                });
+            }
+            
+            // Salvar nova OS
+            const form = document.getElementById('newOSForm');
+            if (form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.saveNewOS();
+                });
+            }
+        },
+        
+        saveNewOS() {
+            // Coletar dados do formulário
+            const checklist = {};
+            const checklistItems = [
+                'wifi', 'bluetooth', 'vibration_motor', 'flash', 'screen_touch',
+                'proximity_sensor', 'fingerprint', 'sim_calling', 'charging_port',
+                'microphone', 'front_camera', 'power_volume_buttons', 'network_3g',
+                'rear_camera', 'earpiece_speaker'
+            ];
+            
+            checklistItems.forEach(item => {
+                const value = document.getElementById(`checklist_${item}`).value;
+                if (value) {
+                    checklist[item] = value;
+                }
+            });
+            
+            const osData = {
+                clientName: document.getElementById('clientName').value,
+                clientPhone: document.getElementById('clientPhone').value,
+                clientDocument: document.getElementById('clientDocument').value,
+                deviceModel: document.getElementById('deviceModel').value,
+                devicePassword: document.getElementById('devicePassword').value,
+                entryDate: document.getElementById('entryDate').value,
+                arrivedOn: document.getElementById('arrivedOn').value,
+                removedCase: document.getElementById('removedCase').value,
+                previousRepair: document.getElementById('previousRepair').value,
+                waterDamage: document.getElementById('waterDamage').value,
+                waterTime: document.getElementById('waterTime').value,
+                allTestsCompleted: document.getElementById('allTestsCompleted').value,
+                services: Array.from(document.getElementById('services').selectedOptions).map(opt => opt.value),
+                preliminaryDiagnosis: document.getElementById('preliminaryDiagnosis').value,
+                internalNotes: document.getElementById('internalNotes').value,
+                observations: document.getElementById('observations').value,
+                serviceValue: parseFloat(document.getElementById('serviceValue').value) || 0,
+                checklist: checklist,
+                status: 'aguardando_analise',
+                protocol: 'OS-' + new Date().getTime()
+            };
+            
+            // Salvar a OS
+            const result = window.osData.addOrder(osData);
+            
+            if (result) {
+                // Adicionar ao histórico do cliente se existir
+                const existingClientSelect = document.getElementById('existingClient');
+                if (existingClientSelect.value) {
+                    const client = window.crmData.clients.find(c => c.id === existingClientSelect.value);
+                    if (client) {
+                        window.crmData.addMaintenanceToClient(client.id, {
+                            service: osData.services.join(', '),
+                            value: osData.serviceValue,
+                            osLink: result.id,
+                            date: new Date().toISOString()
+                        });
+                    }
+                }
+                
+                alert('Ordem de serviço criada com sucesso!');
+                this.loadOS();
+                this.closeNewOSModal();
+            } else {
+                alert('Erro ao criar ordem de serviço');
+            }
+        },
+        
+        editOS(osId) {
+            // Implementação similar ao viewOSDetails, mas em modo de edição
+            // Por simplicidade, vamos redirecionar para visualização
+            this.viewOSDetails(osId);
+        },
+        
+        setupModalCloseListeners() {
+            // Modal de detalhes da OS
+            const osModal = document.getElementById('osModal');
+            if (osModal) {
+                osModal.querySelector('.modal-close').addEventListener('click', () => {
+                    this.closeOSModal();
+                });
+                
+                osModal.querySelector('.modal-overlay').addEventListener('click', () => {
+                    this.closeOSModal();
+                });
+            }
+            
+            // Modal de nova OS
+            const newOSModal = document.getElementById('newOSModal');
+            if (newOSModal) {
+                newOSModal.querySelector('.modal-close').addEventListener('click', () => {
+                    this.closeNewOSModal();
+                });
+                
+                newOSModal.querySelector('.modal-overlay').addEventListener('click', () => {
+                    this.closeNewOSModal();
+                });
+            }
+        },
+        
+        openOSModal() {
+            const modal = document.getElementById('osModal');
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        },
+        
+        closeOSModal() {
+            const modal = document.getElementById('osModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+            selectedOSId = null;
+        },
+        
+        openNewOSModalWindow() {
+            const modal = document.getElementById('newOSModal');
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        },
+        
+        closeNewOSModal() {
+            const modal = document.getElementById('newOSModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    };
+    
+    return module;
+})();

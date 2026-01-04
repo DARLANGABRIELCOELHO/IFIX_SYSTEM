@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Sistema interno iFix - CRM, Ordens de Serviço, Preços e Dashboard" />
+  <meta name="keywords" content="ifix, sistema interno, crm, ordens de serviço, dashboard" />
+  <meta name="author" content="iFix" />
+  <meta name="theme-color" content="#F57C00" />
+
+  <title>iFix - Sistema Interno</title>
+
+  <!-- Preload de fontes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap" as="style">
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap">
+  <link rel="stylesheet" href="./styles/theme.css">
+  <link rel="stylesheet" href="./styles/global.css">
+  <link rel="stylesheet" href="./styles/components.css">
+
+  <!-- Ícones -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Favicon (opcional - só se existir a pasta assets) -->
+  <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16x16.png">
+  <link rel="manifest" href="./assets/site.webmanifest">
+
+  <!-- Scripts críticos inline -->
+  <script>
+    // Previne FOUC
+    document.documentElement.className = 'js-loading';
+    window.addEventListener('DOMContentLoaded', () => {
+      document.documentElement.className = '';
+    });
+
+    // Feature detection básico
+    window.supports = {
+      modules: 'noModule' in HTMLScriptElement,
+      localStorage: (() => {
+        try {
+          localStorage.setItem('test', 'test');
+          localStorage.removeItem('test');
+          return true;
+        } catch (e) {
+          return false;
+        }
+      })(),
+      indexedDB: 'indexedDB' in window
+    };
+  </script>
+
+  <!-- Estilos críticos inline -->
+  <style>
+    .js-loading * { transition: none !important; }
+
+    .app-loading {
+      position: fixed;
+      inset: 0;
+      background: var(--color-black-deep);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.3s ease;
+    }
+    .app-loading.hidden { opacity: 0; pointer-events: none; }
+
+    .loading-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+      animation: fadeIn 0.5s ease;
+    }
+    .loading-logo-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--color-orange-primary);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 24px;
+      animation: pulse 2s infinite;
+    }
+    .loading-logo-text {
+      font-family: 'Urbanist', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--color-text-primary);
+    }
+    .loading-logo-text span { color: var(--color-orange-primary); }
+
+    .loading-progress {
+      width: 220px;
+      height: 4px;
+      background: var(--color-gray-charcoal);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .loading-progress-bar {
+      height: 100%;
+      background: var(--color-orange-primary);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .loading-text {
+      font-family: 'Urbanist', sans-serif;
+      font-size: 14px;
+      color: var(--color-text-secondary);
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Loading screen -->
+  <div class="app-loading" id="app-loading" aria-live="polite" aria-busy="true">
+    <div class="loading-logo">
+      <div class="loading-logo-icon">i</div>
+      <div class="loading-logo-text">i<span>Fix</span></div>
+    </div>
+    <div class="loading-progress">
+      <div class="loading-progress-bar" id="loading-progress"></div>
+    </div>
+    <div class="loading-text" id="loading-text">Inicializando sistema...</div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Modal overlay (genérico) -->
+  <div class="modal-overlay" id="modal-container" aria-hidden="true" aria-label="Modal" tabindex="-1"></div>
+
+  <!-- Offline indicator -->
+  <div class="offline-indicator" id="offline-indicator" hidden>
+    <i class="fas fa-wifi-slash"></i>
+    <span>Você está offline. Algumas funcionalidades podem estar limitadas.</span>
+  </div>
+
+  <!-- App container -->
+  <div class="app-container" id="app-container" hidden>
+    <a href="#app" class="skip-to-content">Ir para o conteúdo principal</a>
+
+    <!-- Sidebar: seu sidebar.js injeta aqui -->
+    <aside id="sidebar" class="sidebar" aria-label="Menu principal"></aside>
+
+    <!-- Main content -->
+    <main class="main-content" id="app" tabindex="-1">
+      <!-- Header (mantive o seu, mas você pode simplificar depois) -->
+      <header class="main-header" id="main-header">
+        <div class="header-left">
+          <nav aria-label="Rastro de navegação" class="breadcrumb">
+            <ol>
+              <li><a href="#" data-page="dashboard">Dashboard</a></li>
+              <li id="current-breadcrumb" aria-current="page">Início</li>
+            </ol>
+          </nav>
+        </div>
+
+        <div class="header-right">
+          <div class="header-actions">
+            <!-- Global search (opcional) -->
+            <div class="search-container">
+              <button class="btn btn-icon search-toggle" aria-label="Abrir busca" id="search-toggle">
+                <i class="fas fa-search"></i>
+              </button>
+              <div class="search-dropdown" id="search-dropdown">
+                <input type="search"
+                       placeholder="Buscar clientes, ordens, serviços..."
+                       aria-label="Campo de busca"
+                       id="global-search">
+                <button class="btn btn-icon" aria-label="Buscar">
+                  <i class="fas fa-search"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Theme toggle -->
+            <button class="btn btn-icon theme-toggle" id="theme-toggle" aria-label="Alternar tema">
+              <i class="fas fa-moon"></i>
+              <i class="fas fa-sun"></i>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Tabs (opcional) -->
+      <div class="tabs-container" id="tabs-container" aria-label="Abas abertas"></div>
+
+      <!-- Container de páginas -->
+      <div class="page-container" id="page-container">
+        <!-- Conteúdo inicial (fallback) -->
+        <div class="welcome-section">
+          <div class="welcome-hero">
+            <div class="welcome-icon">
+              <i class="fas fa-tools"></i>
+            </div>
+            <div class="welcome-content">
+              <h1>Bem-vindo ao <span class="highlight">iFix</span> Sistema</h1>
+              <p class="lead">Gerencie clientes, ordens de serviço, preços e muito mais em um só lugar.</p>
+              <p class="subtitle">Use o menu lateral para começar.</p>
+            </div>
+          </div>
+
+          <div class="quick-actions">
+            <h2>Acesso Rápido</h2>
+            <div class="action-grid">
+              <a href="#" data-page="crm" class="action-card" role="button">
+                <div class="action-icon"><i class="fas fa-user-plus"></i></div>
+                <h3>Novo Cliente</h3>
+                <p>Cadastre um novo cliente no sistema</p>
+              </a>
+
+              <a href="#" data-page="orderservice" class="action-card" role="button">
+                <div class="action-icon"><i class="fas fa-plus-circle"></i></div>
+                <h3>Nova Ordem</h3>
+                <p>Crie uma nova ordem de serviço</p>
+              </a>
+
+              <a href="#" data-page="price" class="action-card" role="button">
+                <div class="action-icon"><i class="fas fa-search-dollar"></i></div>
+                <h3>Consultar Preço</h3>
+                <p>Consulte preços de serviços e peças</p>
+              </a>
+
+              <a href="#" data-page="dashboard" class="action-card" role="button">
+                <div class="action-icon"><i class="fas fa-chart-line"></i></div>
+                <h3>Relatórios</h3>
+                <p>Visualize relatórios e métricas</p>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="main-footer">
+        <div class="footer-content">
+          <div class="footer-logo">
+            <div class="logo-icon">i</div>
+            <div class="logo-text">i<span>Fix</span></div>
+          </div>
+
+          <div class="footer-info">
+            <p>&copy; <span id="current-year">2024</span> iFix Sistema Interno. Todos os direitos reservados.</p>
+            <p class="footer-version">Versão <span id="app-version">1.0.0</span></p>
+          </div>
+
+          <div class="footer-links">
+            <a href="#" class="footer-link" data-action="help">
+              <i class="fas fa-question-circle"></i> Ajuda
+            </a>
+            <a href="#" class="footer-link" data-action="terms">
+              <i class="fas fa-file-contract"></i> Termos
+            </a>
+            <a href="#" class="footer-link" data-action="privacy">
+              <i class="fas fa-shield-alt"></i> Privacidade
+            </a>
+          </div>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Templates -->
+  <template id="notification-template">
+    <div class="notification-item" data-id="">
+      <div class="notification-icon"><i class="fas fa-bell"></i></div>
+      <div class="notification-content">
+        <p class="notification-title"></p>
+        <p class="notification-message"></p>
+        <span class="notification-time"></span>
+      </div>
+      <button class="notification-close" aria-label="Fechar notificação">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </template>
+
+  <!-- Corrigido: sem button dentro de button -->
+  <template id="tab-template">
+    <div class="tab" data-page="" role="tab" aria-selected="false">
+      <button class="tab-main" type="button" aria-label="Abrir aba">
+        <span class="tab-icon" aria-hidden="true"></span>
+        <span class="tab-title"></span>
+      </button>
+      <button class="tab-close" type="button" aria-label="Fechar aba">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </template>
+
+  <!-- Scripts inline essenciais -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Ano no footer
+      const yearEl = document.getElementById('current-year');
+      if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+      // Tema inicial
+      const savedTheme = localStorage.getItem('ifix-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+
+      // Simula progresso do loading (pode ser removido depois)
+      const loadingBar = document.getElementById('loading-progress');
+      const loadingText = document.getElementById('loading-text');
+
+      const progressMessages = [
+        'Inicializando sistema...',
+        'Carregando módulos...',
+        'Preparando interface...',
+        'Pronto!'
+      ];
+
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 25;
+        if (loadingBar) loadingBar.style.width = `${progress}%`;
+        if (loadingText) loadingText.textContent = progressMessages[Math.max(0, progress / 25 - 1)];
+
+        if (progress >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            document.getElementById('app-loading')?.classList.add('hidden');
+            const app = document.getElementById('app-container');
+            if (app) app.hidden = false;
+          }, 300);
+        }
+      }, 250);
+
+      // Offline indicator
+      function updateOnlineStatus() {
+        const offlineIndicator = document.getElementById('offline-indicator');
+        if (!offlineIndicator) return;
+        offlineIndicator.hidden = navigator.onLine;
+      }
+      window.addEventListener('online', updateOnlineStatus);
+      window.addEventListener('offline', updateOnlineStatus);
+      updateOnlineStatus();
+    });
+  </script>
+
+  <!-- Script principal -->
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

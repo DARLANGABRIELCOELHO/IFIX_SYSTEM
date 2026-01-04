@@ -1,628 +1,479 @@
-// components/crm.js ATUALIZADO
-import { db } from '../databank/bankservice.js';
-
-export async function renderCRM() {
-    const contentArea = document.querySelector('#clientesContent');
-    if (!contentArea) {
-        console.error('Área de clientes não encontrada');
-        return;
-    }
+// components/crm.js
+window.CRMModule = (function() {
+    let selectedClientId = null;
     
-    try {
-        const clients = db.clients || [];
-        
-        contentArea.innerHTML = `
-            <div class="crm-header mb-4">
-                <div class="d-flex justify-between align-center">
-                    <div>
-                        <h2 class="mb-2">Gestão de Clientes</h2>
-                        <p class="text-light">Cadastro e gerenciamento de clientes</p>
-                    </div>
-                    <button class="btn btn-primary" onclick="openNewClientModal()">
-                        <i class="fas fa-plus"></i>
-                        Novo Cliente
-                    </button>
-                </div>
-            </div>
-
-            <!-- Barra de Busca -->
-            <div class="card mb-4">
-                <div class="d-flex gap-3">
-                    <div class="flex-1">
-                        <div class="form-group">
-                            <label class="form-label">Buscar Cliente</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   placeholder="Nome, CPF ou Telefone"
-                                   id="clientSearchInput">
-                        </div>
-                    </div>
-                    <div style="width: 200px;">
-                        <div class="form-group">
-                            <label class="form-label">Ordenar por</label>
-                            <select class="form-control" id="clientSortSelect">
-                                <option value="name">Nome A-Z</option>
-                                <option value="date">Data de Cadastro</option>
-                                <option value="spent">Total Gasto</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tabela de Clientes -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-list"></i>
-                        Lista de Clientes
-                    </h3>
-                    <div class="d-flex align-center gap-2">
-                        <span class="text-light" id="clientCount">${clients.length} clientes encontrados</span>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="table-container">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Nome do Cliente</th>
-                                    <th>Documento (CPF)</th>
-                                    <th>WhatsApp</th>
-                                    <th>Data de Cadastro</th>
-                                    <th>Total Gasto</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="clientsTableBody">
-                                ${renderClientsTable(clients)}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Adicionar eventos após renderizar
-        setupClientEvents();
-        
-    } catch (error) {
-        console.error('Erro ao renderizar CRM:', error);
-        contentArea.innerHTML = `
-            <div class="card">
-                <div class="text-center" style="padding: 3rem;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #F44336;"></i>
-                    <h3 class="mt-3">Erro ao carregar clientes</h3>
-                    <p class="text-light mt-2">${error.message}</p>
-                </div>
-            </div>
-        `;
-    }
-}
-
-function renderClientsTable(clients) {
-    if (!clients || clients.length === 0) {
-        return `
-            <tr>
-                <td colspan="6" class="text-center" style="padding: 3rem;">
-                    <i class="fas fa-users" style="font-size: 3rem; color: var(--color-gray-light);"></i>
-                    <p class="mt-3">Nenhum cliente cadastrado</p>
-                </td>
-            </tr>
-        `;
-    }
-    
-    return clients.map(client => `
-        <tr data-client-id="${client.id}">
-            <td>
-                <div class="d-flex align-center gap-2">
-                    <div class="avatar" style="width: 40px; height: 40px; background: var(--color-gray-charcoal); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div>
-                        <div><strong>${client.name}</strong></div>
-                        <small class="text-light">${client.email || 'Sem e-mail'}</small>
-                    </div>
-                </div>
-            </td>
-            <td>${client.cpf || client.cnpj || 'N/D'}</td>
-            <td>
-                <div class="d-flex align-center gap-2">
-                    <i class="fab fa-whatsapp" style="color: #25D366;"></i>
-                    <span>${client.phone || 'N/D'}</span>
-                </div>
-            </td>
-            <td>${formatDate(client.registrationDate)}</td>
-            <td>
-                <strong class="text-orange">${formatCurrency(client.totalSpent)}</strong>
-            </td>
-            <td>
-                <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-outline" onclick="viewClientProfile(${client.id})" title="Perfil">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline" onclick="editClient(${client.id})" title="Editar">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline" onclick="viewClientHistory(${client.id})" title="Histórico">
-                        <i class="fas fa-history"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline text-danger" onclick="deleteClient(${client.id})" title="Excluir">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-}
-
-function setupClientEvents() {
-    // Configurar eventos de busca
-    const searchInput = document.getElementById('clientSearchInput');
-    const sortSelect = document.getElementById('clientSortSelect');
-    
-    if (searchInput) {
-        searchInput.addEventListener('input', searchClients);
-    }
-    
-    if (sortSelect) {
-        sortSelect.addEventListener('change', sortClients);
-    }
-    
-    // Expor funções para o escopo global
-    window.searchClients = searchClients;
-    window.sortClients = sortClients;
-    window.openNewClientModal = openNewClientModal;
-    window.viewClientProfile = viewClientProfile;
-    window.editClient = editClient;
-    window.viewClientHistory = viewClientHistory;
-    window.deleteClient = deleteClient;
-}
-
-function searchClients() {
-    const searchTerm = document.getElementById('clientSearchInput').value.toLowerCase();
-    const rows = document.querySelectorAll('#clientsTableBody tr');
-    let visibleCount = 0;
-    
-    rows.forEach(row => {
-        const clientName = row.cells[0].textContent.toLowerCase();
-        const clientCPF = row.cells[1].textContent;
-        const clientPhone = row.cells[2].textContent;
-        
-        if (clientName.includes(searchTerm) || 
-            clientCPF.includes(searchTerm) || 
-            clientPhone.includes(searchTerm)) {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
-        }
-    });
-    
-    document.getElementById('clientCount').textContent = `${visibleCount} clientes encontrados`;
-}
-
-function sortClients() {
-    const sortBy = document.getElementById('clientSortSelect').value;
-    const rows = Array.from(document.querySelectorAll('#clientsTableBody tr'));
-    
-    rows.sort((a, b) => {
-        const idA = parseInt(a.dataset.clientId);
-        const idB = parseInt(b.dataset.clientId);
-        const clientA = db.clients.find(c => c.id === idA);
-        const clientB = db.clients.find(c => c.id === idB);
-        
-        if (!clientA || !clientB) return 0;
-        
-        switch(sortBy) {
-            case 'name':
-                return clientA.name.localeCompare(clientB.name);
-            case 'date':
-                return new Date(clientB.registrationDate) - new Date(clientA.registrationDate);
-            case 'spent':
-                return (clientB.totalSpent || 0) - (clientA.totalSpent || 0);
-            default:
-                return 0;
-        }
-    });
-    
-    const tableBody = document.getElementById('clientsTableBody');
-    if (tableBody) {
-        rows.forEach(row => tableBody.appendChild(row));
-    }
-}
-
-function openNewClientModal() {
-    const modalHTML = `
-        <div class="modal active" id="newClientModal">
-            <div class="modal-content" style="max-width: 700px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">
-                        <i class="fas fa-user-plus"></i>
-                        Cadastrar Novo Cliente
-                    </h3>
-                    <button class="modal-close" onclick="window.app.closeModal('newClientModal')">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <form id="newClientForm">
-                        <div class="grid grid-2 gap-3 mb-3">
-                            <div class="form-group">
-                                <label class="form-label">Nome Completo *</label>
-                                <input type="text" class="form-control" name="name" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">CPF *</label>
-                                <input type="text" class="form-control" name="cpf" required
-                                       placeholder="000.000.000-00">
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-2 gap-3 mb-3">
-                            <div class="form-group">
-                                <label class="form-label">Telefone/WhatsApp *</label>
-                                <input type="tel" class="form-control" name="phone" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">E-mail</label>
-                                <input type="email" class="form-control" name="email">
-                            </div>
-                        </div>
-                        
-                        <div class="form-group mb-3">
-                            <label class="form-label">Endereço</label>
-                            <input type="text" class="form-control" name="address" 
-                                   placeholder="Rua, número, bairro, cidade">
-                        </div>
-                        
-                        <div class="form-group mb-4">
-                            <label class="form-label">Observações</label>
-                            <textarea class="form-control" name="notes" rows="3"></textarea>
-                        </div>
-                        
-                        <div class="d-flex justify-end gap-2">
-                            <button type="button" class="btn btn-secondary" 
-                                    onclick="window.app.closeModal('newClientModal')">
-                                Cancelar
+    const module = {
+        render() {
+            return `
+                <div class="crm-module">
+                    <div class="module-header">
+                        <h2>CRM - Clientes</h2>
+                        <div class="header-actions">
+                            <button id="newClientBtn" class="btn btn-primary">
+                                <span>➕ Novo Cliente</span>
                             </button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i>
-                                Salvar Cliente
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.getElementById('modalContainer').innerHTML = modalHTML;
-    
-    // Adicionar evento de submit
-    const form = document.getElementById('newClientForm');
-    if (form) {
-        form.addEventListener('submit', saveNewClient);
-    }
-}
-
-async function saveNewClient(event) {
-    event.preventDefault();
-    
-    const form = event.target;
-    const formData = new FormData(form);
-    const clientData = Object.fromEntries(formData.entries());
-    
-    try {
-        const newClient = await db.createClient(clientData);
-        window.app.showSuccess('Cliente cadastrado com sucesso!');
-        window.app.closeModal('newClientModal');
-        
-        // Recarregar a lista
-        if (window.app && window.app.switchTab) {
-            window.app.switchTab('clientes');
-        } else {
-            renderCRM();
-        }
-    } catch (error) {
-        window.app.showError('Erro ao cadastrar cliente: ' + error.message);
-    }
-}
-
-function viewClientProfile(clientId) {
-    const client = db.clients.find(c => c.id === clientId);
-    if (!client) {
-        window.app.showError('Cliente não encontrado');
-        return;
-    }
-    
-    window.app.showModal('clientProfile', {
-        title: `Perfil do Cliente - ${client.name}`,
-        content: `
-            <div class="client-profile">
-                <div class="grid grid-2 gap-4 mb-4">
-                    <div class="card">
-                        <div class="card-header">
-                            <h4 class="card-title">
-                                <i class="fas fa-user"></i>
-                                Dados Pessoais
-                            </h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="info-item mb-3">
-                                <label class="text-light">Nome:</label>
-                                <div>${client.name}</div>
-                            </div>
-                            <div class="info-item mb-3">
-                                <label class="text-light">Documento:</label>
-                                <div>${client.cpf || client.cnpj}</div>
-                            </div>
-                            <div class="info-item mb-3">
-                                <label class="text-light">Telefone:</label>
-                                <div>${client.phone}</div>
-                            </div>
-                            <div class="info-item mb-3">
-                                <label class="text-light">E-mail:</label>
-                                <div>${client.email || 'Não informado'}</div>
-                            </div>
-                            <div class="info-item">
-                                <label class="text-light">Endereço:</label>
-                                <div>${client.address || 'Não informado'}</div>
-                            </div>
                         </div>
                     </div>
                     
-                    <div class="card">
-                        <div class="card-header">
-                            <h4 class="card-title">
-                                <i class="fas fa-chart-bar"></i>
-                                Estatísticas
-                            </h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="info-item mb-3">
-                                <label class="text-light">Total Gasto:</label>
-                                <div class="text-orange">${formatCurrency(client.totalSpent)}</div>
-                            </div>
-                            <div class="info-item mb-3">
-                                <label class="text-light">Data de Cadastro:</label>
-                                <div>${formatDate(client.registrationDate)}</div>
-                            </div>
-                            <div class="info-item mb-3">
-                                <label class="text-light">Categoria:</label>
-                                <div>
-                                    <span class="badge ${client.category === 'vip' ? 'badge-primary' : 'badge-info'}">
-                                        ${client.category || 'regular'}
-                                    </span>
+                    <div class="row">
+                        <div class="col-12 col-md-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Lista de Clientes</h3>
+                                    <div class="search-box">
+                                        <input type="text" id="clientSearch" class="form-control" 
+                                               placeholder="Buscar por nome, CPF, telefone...">
+                                        <span>🔍</span>
+                                    </div>
+                                </div>
+                                <div class="table-container">
+                                    <table id="clientsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Nome</th>
+                                                <th>Documento</th>
+                                                <th>Telefone</th>
+                                                <th>Data Cadastro</th>
+                                                <th>Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="clientsTableBody">
+                                            <!-- Dados carregados dinamicamente -->
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
-                            <div class="info-item">
-                                <label class="text-light">Observações:</label>
-                                <div>${client.notes || 'Nenhuma observação'}</div>
+                        </div>
+                        
+                        <div class="col-12 col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Cadastro Rápido</h3>
+                                </div>
+                                <div class="card-body">
+                                    <form id="quickClientForm">
+                                        <div class="form-group">
+                                            <label class="form-label">Nome Completo *</label>
+                                            <input type="text" id="clientName" class="form-control" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Documento (CPF/CNPJ)</label>
+                                            <input type="text" id="clientDocument" class="form-control">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Telefone (WhatsApp) *</label>
+                                            <input type="tel" id="clientPhone" class="form-control" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">E-mail</label>
+                                            <input type="email" id="clientEmail" class="form-control">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Endereço</label>
+                                            <input type="text" id="clientAddress" class="form-control" 
+                                                   placeholder="Digite o endereço...">
+                                        </div>
+                                        <div class="form-actions">
+                                            <button type="submit" class="btn btn-primary">Salvar Cliente</button>
+                                            <button type="button" id="clearFormBtn" class="btn btn-secondary">Limpar</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal de Detalhes do Cliente -->
+                    <div id="clientModal" class="modal">
+                        <div class="modal-overlay"></div>
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3>Detalhes do Cliente</h3>
+                                <button class="modal-close">&times;</button>
+                            </div>
+                            <div class="modal-body" id="clientModalBody">
+                                <!-- Conteúdo dinâmico -->
                             </div>
                         </div>
                     </div>
                 </div>
+            `;
+        },
+        
+        initialize() {
+            this.loadClients();
+            this.setupEventListeners();
+        },
+        
+        loadClients(search = '') {
+            const clients = window.crmData.getClients(search);
+            const tbody = document.getElementById('clientsTableBody');
+            
+            if (clients.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center">Nenhum cliente encontrado</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = clients.map(client => `
+                <tr>
+                    <td><strong>${client.name || 'N/A'}</strong></td>
+                    <td>${client.document || 'N/A'}</td>
+                    <td>
+                        <div>${client.phone || 'N/A'}</div>
+                        ${client.email ? `<small>${client.email}</small>` : ''}
+                    </td>
+                    <td>${this.formatDate(client.createdAt)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary view-client" data-id="${client.id}">
+                            👁️ Perfil
+                        </button>
+                        <button class="btn btn-sm btn-secondary edit-client" data-id="${client.id}">
+                            ✏️ Editar
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        },
+        
+        formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('pt-BR');
+        },
+        
+        setupEventListeners() {
+            // Busca de clientes
+            const searchInput = document.getElementById('clientSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    this.loadClients(e.target.value);
+                });
+            }
+            
+            // Novo cliente
+            const newClientBtn = document.getElementById('newClientBtn');
+            if (newClientBtn) {
+                newClientBtn.addEventListener('click', () => {
+                    this.openClientModal();
+                });
+            }
+            
+            // Formulário rápido
+            const quickClientForm = document.getElementById('quickClientForm');
+            if (quickClientForm) {
+                quickClientForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.saveClient();
+                });
+            }
+            
+            // Limpar formulário
+            const clearFormBtn = document.getElementById('clearFormBtn');
+            if (clearFormBtn) {
+                clearFormBtn.addEventListener('click', () => {
+                    document.getElementById('quickClientForm').reset();
+                });
+            }
+            
+            // Delegar eventos para os botões de ação na tabela
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('view-client') || 
+                    e.target.parentElement.classList.contains('view-client')) {
+                    const clientId = e.target.dataset.id || e.target.parentElement.dataset.id;
+                    this.viewClientDetails(clientId);
+                }
                 
-                <div class="d-flex justify-end gap-2">
-                    <button class="btn btn-secondary" onclick="window.app.closeModal('clientProfile')">
-                        Fechar
-                    </button>
-                    <button class="btn btn-primary" onclick="editClient(${clientId})">
-                        <i class="fas fa-edit"></i>
-                        Editar Cliente
-                    </button>
-                </div>
-            </div>
-        `
-    });
-}
-
-function editClient(clientId) {
-    const client = db.clients.find(c => c.id === clientId);
-    if (!client) {
-        window.app.showError('Cliente não encontrado');
-        return;
-    }
-    
-    window.app.showModal('editClient', {
-        title: `Editar Cliente - ${client.name}`,
-        content: `
-            <div class="edit-client">
-                <form id="editClientForm">
-                    <div class="grid grid-2 gap-3 mb-3">
-                        <div class="form-group">
-                            <label class="form-label">Nome Completo *</label>
-                            <input type="text" class="form-control" name="name" value="${client.name}" required>
+                if (e.target.classList.contains('edit-client') || 
+                    e.target.parentElement.classList.contains('edit-client')) {
+                    const clientId = e.target.dataset.id || e.target.parentElement.dataset.id;
+                    this.editClient(clientId);
+                }
+            });
+            
+            // Auto-complete de endereço
+            const addressInput = document.getElementById('clientAddress');
+            if (addressInput) {
+                addressInput.addEventListener('input', this.handleAddressAutocomplete);
+            }
+        },
+        
+        handleAddressAutocomplete(e) {
+            // Em produção, integrar com API de CEP
+            const value = e.target.value;
+            if (value.length > 5) {
+                // Simular sugestões
+                console.log('Buscando endereços para:', value);
+            }
+        },
+        
+        saveClient() {
+            const clientData = {
+                name: document.getElementById('clientName').value,
+                document: document.getElementById('clientDocument').value,
+                phone: document.getElementById('clientPhone').value,
+                email: document.getElementById('clientEmail').value,
+                address: document.getElementById('clientAddress').value,
+                totalSpent: 0,
+                maintenanceHistory: []
+            };
+            
+            const result = window.crmData.addClient(clientData);
+            
+            if (result) {
+                alert('Cliente salvo com sucesso!');
+                this.loadClients();
+                document.getElementById('quickClientForm').reset();
+            } else {
+                alert('Erro ao salvar cliente');
+            }
+        },
+        
+        viewClientDetails(clientId) {
+            const client = window.crmData.clients.find(c => c.id === clientId);
+            if (!client) return;
+            
+            const modalBody = document.getElementById('clientModalBody');
+            modalBody.innerHTML = `
+                <div class="client-details">
+                    <div class="detail-section">
+                        <div class="section-header">
+                            <h4>Dados Pessoais</h4>
+                            <button class="btn btn-sm btn-primary" onclick="CRMModule.editClient('${clientId}')">
+                                Editar
+                            </button>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">CPF</label>
-                            <input type="text" class="form-control" name="cpf" value="${client.cpf || ''}">
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <strong>Nome:</strong> ${client.name || 'N/A'}
+                            </div>
+                            <div class="detail-item">
+                                <strong>Documento:</strong> ${client.document || 'N/A'}
+                            </div>
+                            <div class="detail-item">
+                                <strong>Telefone:</strong> ${client.phone || 'N/A'}
+                            </div>
+                            <div class="detail-item">
+                                <strong>E-mail:</strong> ${client.email || 'N/A'}
+                            </div>
+                            <div class="detail-item">
+                                <strong>Endereço:</strong> ${client.address || 'N/A'}
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="grid grid-2 gap-3 mb-3">
+                    <div class="detail-section">
+                        <h4>Total Gasto: R$ ${client.totalSpent?.toFixed(2) || '0,00'}</h4>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>Histórico de Manutenção</h4>
+                        <div class="history-list">
+                            ${this.renderMaintenanceHistory(client.maintenanceHistory || [])}
+                        </div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button class="btn btn-primary" onclick="window.print()">📄 Imprimir Ficha</button>
+                        <button class="btn btn-secondary close-modal">Fechar</button>
+                    </div>
+                </div>
+            `;
+            
+            this.openModal();
+        },
+        
+        renderMaintenanceHistory(history) {
+            if (history.length === 0) {
+                return '<p class="text-center">Nenhuma manutenção registrada</p>';
+            }
+            
+            return history.map(item => `
+                <div class="history-item">
+                    <div class="history-date">${this.formatDate(item.date)}</div>
+                    <div class="history-service">${item.service || 'Serviço não especificado'}</div>
+                    <div class="history-value">R$ ${item.value?.toFixed(2) || '0,00'}</div>
+                    ${item.osLink ? `<a href="#" class="history-link" data-os="${item.osLink}">Ver OS</a>` : ''}
+                </div>
+            `).join('');
+        },
+        
+        editClient(clientId) {
+            const client = window.crmData.clients.find(c => c.id === clientId);
+            if (!client) return;
+            
+            selectedClientId = clientId;
+            
+            const modalBody = document.getElementById('clientModalBody');
+            modalBody.innerHTML = `
+                <div class="client-edit-form">
+                    <h4>Editar Cliente</h4>
+                    <form id="editClientForm">
                         <div class="form-group">
-                            <label class="form-label">Telefone *</label>
-                            <input type="tel" class="form-control" name="phone" value="${client.phone}" required>
+                            <label class="form-label">Nome Completo *</label>
+                            <input type="text" id="editClientName" class="form-control" 
+                                   value="${client.name || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Documento (CPF/CNPJ)</label>
+                            <input type="text" id="editClientDocument" class="form-control" 
+                                   value="${client.document || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Telefone (WhatsApp) *</label>
+                            <input type="tel" id="editClientPhone" class="form-control" 
+                                   value="${client.phone || ''}" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label">E-mail</label>
-                            <input type="email" class="form-control" name="email" value="${client.email || ''}">
+                            <input type="email" id="editClientEmail" class="form-control" 
+                                   value="${client.email || ''}">
                         </div>
-                    </div>
-                    
-                    <div class="form-group mb-3">
-                        <label class="form-label">Endereço</label>
-                        <input type="text" class="form-control" name="address" value="${client.address || ''}">
-                    </div>
-                    
-                    <div class="form-group mb-4">
-                        <label class="form-label">Observações</label>
-                        <textarea class="form-control" name="notes" rows="3">${client.notes || ''}</textarea>
-                    </div>
-                    
-                    <div class="d-flex justify-end gap-2">
-                        <button type="button" class="btn btn-secondary" onclick="window.app.closeModal('editClient')">
-                            Cancelar
-                        </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i>
-                            Atualizar Cliente
-                        </button>
-                    </div>
-                </form>
-            </div>
-        `
-    });
-    
-    // Adicionar evento de submit
-    setTimeout(() => {
-        const form = document.getElementById('editClientForm');
-        if (form) {
-            form.addEventListener('submit', (e) => updateClient(e, clientId));
-        }
-    }, 100);
-}
-
-async function updateClient(event, clientId) {
-    event.preventDefault();
-    
-    const form = event.target;
-    const formData = new FormData(form);
-    const clientData = Object.fromEntries(formData.entries());
-    
-    try {
-        const updatedClient = await db.updateClient(clientId, clientData);
-        window.app.showSuccess('Cliente atualizado com sucesso!');
-        window.app.closeModal('editClient');
-        
-        // Recarregar a lista
-        if (window.app && window.app.switchTab) {
-            window.app.switchTab('clientes');
-        } else {
-            renderCRM();
-        }
-    } catch (error) {
-        window.app.showError('Erro ao atualizar cliente: ' + error.message);
-    }
-}
-
-function viewClientHistory(clientId) {
-    const client = db.clients.find(c => c.id === clientId);
-    const clientOrders = db.orders.filter(o => o.clientId === clientId);
-    
-    if (!client) {
-        window.app.showError('Cliente não encontrado');
-        return;
-    }
-    
-    window.app.showModal('clientHistory', {
-        title: `Histórico - ${client.name}`,
-        content: `
-            <div class="client-history">
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h4 class="card-title">
-                            <i class="fas fa-history"></i>
-                            Histórico de Ordens de Serviço
-                        </h4>
-                    </div>
-                    <div class="card-body">
-                        ${clientOrders.length > 0 ? `
-                            <div class="table-container">
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Protocolo</th>
-                                            <th>Equipamento</th>
-                                            <th>Status</th>
-                                            <th>Data</th>
-                                            <th>Valor</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${clientOrders.map(order => `
-                                            <tr>
-                                                <td>
-                                                    <strong>#${order.protocol}</strong>
-                                                </td>
-                                                <td>${order.equipment}</td>
-                                                <td>
-                                                    <span class="badge ${getStatusBadgeClass(order.status)}">
-                                                        ${order.status}
-                                                    </span>
-                                                </td>
-                                                <td>${formatDate(order.date)}</td>
-                                                <td>${formatCurrency(order.value)}</td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ` : `
-                            <div class="text-center" style="padding: 2rem;">
-                                <i class="fas fa-clipboard-list" style="font-size: 3rem; color: var(--color-gray-light);"></i>
-                                <p class="mt-3">Nenhuma ordem de serviço encontrada</p>
-                            </div>
-                        `}
-                    </div>
+                        <div class="form-group">
+                            <label class="form-label">Endereço</label>
+                            <input type="text" id="editClientAddress" class="form-control" 
+                                   value="${client.address || ''}">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Atualizar</button>
+                            <button type="button" class="btn btn-secondary cancel-edit">Cancelar</button>
+                        </div>
+                    </form>
                 </div>
-                
-                <div class="d-flex justify-end">
-                    <button class="btn btn-secondary" onclick="window.app.closeModal('clientHistory')">
-                        Fechar
-                    </button>
-                </div>
-            </div>
-        `
-    });
-}
-
-async function deleteClient(clientId) {
-    if (!confirm('Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.')) {
-        return;
-    }
-    
-    try {
-        const deleted = await db.deleteClient(clientId);
-        if (deleted) {
-            window.app.showSuccess('Cliente excluído com sucesso!');
+            `;
             
-            // Recarregar a lista
-            if (window.app && window.app.switchTab) {
-                window.app.switchTab('clientes');
-            } else {
-                renderCRM();
+            // Configurar eventos do formulário de edição
+            const editForm = document.getElementById('editClientForm');
+            if (editForm) {
+                editForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.updateClient();
+                });
             }
+            
+            document.querySelector('.cancel-edit').addEventListener('click', () => {
+                this.viewClientDetails(clientId);
+            });
+            
+            this.openModal();
+        },
+        
+        updateClient() {
+            const clientData = {
+                name: document.getElementById('editClientName').value,
+                document: document.getElementById('editClientDocument').value,
+                phone: document.getElementById('editClientPhone').value,
+                email: document.getElementById('editClientEmail').value,
+                address: document.getElementById('editClientAddress').value
+            };
+            
+            const result = window.crmData.updateClient(selectedClientId, clientData);
+            
+            if (result) {
+                alert('Cliente atualizado com sucesso!');
+                this.loadClients();
+                this.closeModal();
+            } else {
+                alert('Erro ao atualizar cliente');
+            }
+        },
+        
+        openClientModal() {
+            const modalBody = document.getElementById('clientModalBody');
+            modalBody.innerHTML = `
+                <div class="client-edit-form">
+                    <h4>Novo Cliente</h4>
+                    <form id="newClientFormModal">
+                        <div class="form-group">
+                            <label class="form-label">Nome Completo *</label>
+                            <input type="text" id="newClientName" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Documento (CPF/CNPJ)</label>
+                            <input type="text" id="newClientDocument" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Telefone (WhatsApp) *</label>
+                            <input type="tel" id="newClientPhone" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">E-mail</label>
+                            <input type="email" id="newClientEmail" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Endereço</label>
+                            <input type="text" id="newClientAddress" class="form-control">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Salvar</button>
+                            <button type="button" class="btn btn-secondary cancel-new">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            // Configurar eventos do formulário novo
+            const newForm = document.getElementById('newClientFormModal');
+            if (newForm) {
+                newForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.saveClientFromModal();
+                });
+            }
+            
+            document.querySelector('.cancel-new').addEventListener('click', () => {
+                this.closeModal();
+            });
+            
+            this.openModal();
+        },
+        
+        saveClientFromModal() {
+            const clientData = {
+                name: document.getElementById('newClientName').value,
+                document: document.getElementById('newClientDocument').value,
+                phone: document.getElementById('newClientPhone').value,
+                email: document.getElementById('newClientEmail').value,
+                address: document.getElementById('newClientAddress').value,
+                totalSpent: 0,
+                maintenanceHistory: []
+            };
+            
+            const result = window.crmData.addClient(clientData);
+            
+            if (result) {
+                alert('Cliente salvo com sucesso!');
+                this.loadClients();
+                this.closeModal();
+            } else {
+                alert('Erro ao salvar cliente');
+            }
+        },
+        
+        openModal() {
+            const modal = document.getElementById('clientModal');
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            
+            // Configurar botão de fechar
+            modal.querySelector('.modal-close').addEventListener('click', () => {
+                this.closeModal();
+            });
+            
+            modal.querySelector('.modal-overlay').addEventListener('click', () => {
+                this.closeModal();
+            });
+        },
+        
+        closeModal() {
+            const modal = document.getElementById('clientModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+            selectedClientId = null;
         }
-    } catch (error) {
-        window.app.showError('Erro ao excluir cliente: ' + error.message);
-    }
-}
-
-// Funções auxiliares
-function formatCurrency(value) {
-    if (value === undefined || value === null) return 'R$ 0,00';
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-    }).format(value);
-}
-
-function formatDate(date) {
-    if (!date) return '--/--/----';
-    return new Intl.DateTimeFormat('pt-BR').format(new Date(date));
-}
-
-function getStatusBadgeClass(status) {
-    const statusClasses = {
-        'Pronto': 'badge-success',
-        'Em manutenção': 'badge-warning',
-        'Aguardando análise': 'badge-info',
-        'Aguardando aprovação': 'badge-primary',
-        'Entregue': 'badge-success',
-        'Cancelado': 'badge-danger'
     };
-    return statusClasses[status] || 'badge-secondary';
-}
+    
+    return module;
+})();
