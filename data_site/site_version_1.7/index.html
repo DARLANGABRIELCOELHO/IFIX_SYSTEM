@@ -1,137 +1,76 @@
+<!-- index.html -->
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iFix Boituva - Sistema de Gestão</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <title>IFIX - Sistema de Gerenciamento</title>
     <link rel="stylesheet" href="css_global.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Adicionar Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- Adicionar moment.js para datas -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/pt-br.min.js"></script>
 </head>
 <body>
-    <!-- Sidebar -->
-    <nav class="sidebar">
-        <div class="logo">
-            <h1><i class="fas fa-tools"></i> iFix Boituva</h1>
-            <p class="logo-subtitle">Sistema de Gestão</p>
-        </div>
-        
-        <div class="nav-menu">
-            <div class="nav-section">
-                <h3 class="nav-section-title">PRINCIPAL</h3>
-                <a href="#dashboard" class="nav-item active" data-tab="dashboard">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </a>
+    <div id="app">
+        <!-- Barra lateral de navegação -->
+        <nav class="sidebar">
+            <div class="logo">
+                <h1><span class="logo-orange">IFIX</span>Boituva</h1>
             </div>
-            
-            <div class="nav-section">
-                <h3 class="nav-section-title">GERENCIAMENTO</h3>
-                <a href="#clientes" class="nav-item" data-tab="clientes">
-                    <i class="fas fa-users"></i>
-                    <span>Gestão de Clientes</span>
-                </a>
-                <a href="#precos" class="nav-item" data-tab="precos">
-                    <i class="fas fa-tags"></i>
-                    <span>Gestão de Preços</span>
-                </a>
-                <a href="#ordens" class="nav-item" data-tab="ordens">
-                    <i class="fas fa-clipboard-list"></i>
-                    <span>Gestão de OS</span>
-                </a>
+            <ul class="nav-menu">
+                <li class="nav-item active" data-page="dashboard">
+                    <span>📊 Dashboard</span>
+                </li>
+                <li class="nav-item" data-page="price">
+                    <span>💰 Consulta de Preços</span>
+                </li>
+                <li class="nav-item" data-page="orderservice">
+                    <span>🛠️ Ordem de Serviço</span>
+                </li>
+                <li class="nav-item" data-page="crm">
+                    <span>👥 CRM Clientes</span>
+                </li>
+                <li class="nav-item" data-page="services">
+                    <span>⚙️ Serviços</span>
+                </li>
+            </ul>
+            <div class="user-info">
+                <div class="avatar">IF</div>
+                <div class="user-details">
+                    <span class="username">IFIX Boituva</span>
+                    <span class="user-role">Administrador</span>
+                </div>
             </div>
-            
-            <div class="nav-section">
-                <h3 class="nav-section-title">RELATÓRIOS</h3>
-                <a href="#relatorios" class="nav-item" data-tab="relatorios">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Relatórios</span>
-                </a>
-                <a href="#configuracoes" class="nav-item" data-tab="configuracoes">
-                    <i class="fas fa-cog"></i>
-                    <span>Configurações</span>
-                </a>
-            </div>
-        </div>
-        
-        <div class="user-info">
-            <div class="user-avatar">
-                <i class="fas fa-user-circle"></i>
-            </div>
-            <div class="user-details">
-                <span class="user-name">Administrador</span>
-                <span class="user-role">Gerente Técnico</span>
-            </div>
-            <a href="#logout" class="logout-btn">
-                <i class="fas fa-sign-out-alt"></i>
-            </a>
-        </div>
-    </nav>
+        </nav>
 
-    <!-- Main Container -->
-    <main class="main-container">
-        <!-- Header -->
-        <header class="main-header">
-            <div class="header-left">
-                <button class="menu-toggle" id="menuToggle">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <h1 id="pageTitle">Dashboard</h1>
-            </div>
-            
-            <div class="header-right">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Buscar no sistema...">
+        <!-- Conteúdo principal -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="breadcrumb">
+                    <span id="currentPage">Dashboard</span>
                 </div>
                 <div class="header-actions">
-                    <button class="btn-notification">
-                        <i class="fas fa-bell"></i>
-                        <span class="notification-badge">3</span>
-                    </button>
-                    <button class="btn-help">
-                        <i class="fas fa-question-circle"></i>
-                    </button>
+                    <button class="btn-notification">🔔</button>
+                    <button class="btn-settings">⚙️</button>
                 </div>
-            </div>
-        </header>
+            </header>
 
-        <!-- Content Area -->
-        <div class="content-wrapper">
-            <!-- Dashboard Content -->
-            <div id="dashboardContent" class="tab-content active">
-                <!-- Dashboard cards will be loaded here via JS -->
+            <!-- Área de conteúdo dinâmico -->
+            <div id="pageContent" class="page-content">
+                <!-- Conteúdo será carregado dinamicamente aqui -->
             </div>
-
-            <!-- Clientes Content -->
-            <div id="clientesContent" class="tab-content">
-                <!-- Clientes content will be loaded here via JS -->
-            </div>
-
-            <!-- Preços Content -->
-            <div id="precosContent" class="tab-content">
-                <!-- Preços content will be loaded here via JS -->
-            </div>
-
-            <!-- Ordens Content -->
-            <div id="ordensContent" class="tab-content">
-                <!-- Ordens content will be loaded here via JS -->
-            </div>
-        </div>
-    </main>
-
-    <!-- Modal Container -->
-    <div id="modalContainer"></div>
+        </main>
+    </div>
 
     <!-- Scripts -->
-    <script type="module" src="app.js"></script>
+    <script src="databank/bankservice.js"></script>
+    <script src="databank/osbank.js"></script>
+    <script src="databank/bankcrm.js"></script>
+    
+    <script src="components/dashboard.js"></script>
+    <script src="components/price.js"></script>
+    <script src="components/orderservice.js"></script>
+    <script src="components/crm.js"></script>
+    
+    <script src="whatsapp-module.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
