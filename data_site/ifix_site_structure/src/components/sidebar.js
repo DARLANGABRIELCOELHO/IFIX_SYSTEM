@@ -1,282 +1,135 @@
-// components/sidebar.js
-// Sidebar reutilizável com tema iFix
+// sidebar.js — componente de navegação lateral (UI pura)
+// Responsabilidade: render + controle de item ativo + callback de clique
 
-const SIDEBAR_COLLAPSE_KEY = "ifix_sidebar_collapsed";
-const SIDEBAR_THEME_KEY = "ifix_theme";
+window.Sidebar = (function () {
+  let onClickHandler = null;
+  let containerEl = null;
 
-export default {
-    /**
-     * Renderiza a sidebar
-     * @param {Array} items - Itens do menu
-     * @returns {HTMLElement} Elemento da sidebar
-     */
-    render(items = []) {
-        const collapsed = localStorage.getItem(SIDEBAR_COLLAPSE_KEY) === 'true';
-        const currentTheme = localStorage.getItem(SIDEBAR_THEME_KEY) || 'dark';
-        
-        const sidebar = document.createElement('aside');
-        sidebar.className = `sidebar ${collapsed ? 'collapsed' : ''}`;
-        sidebar.innerHTML = `
-            <div class="sidebar-header">
-                <a href="#" class="sidebar-logo" data-page="dashboard">
-                    <div class="sidebar-logo-icon">i</div>
-                    ${!collapsed ? `
-                        <div class="sidebar-logo-text">
-                            i<span>Fix</span>
-                        </div>
-                    ` : ''}
-                </a>
-                <button class="sidebar-toggle" id="sidebar-toggle" aria-label="${collapsed ? 'Expandir' : 'Recolher'} menu">
-                    <i class="fas ${collapsed ? 'fa-chevron-right' : 'fa-chevron-left'}"></i>
-                </button>
-            </div>
+  const DEFAULTS = {
+    brand: "iFix",
+    subtitle: "Sistema Interno",
+  };
 
-            <nav class="sidebar-nav" aria-label="Navegação principal">
-                <ul class="sidebar-nav-list">
-                    ${items.map(item => {
-                        if (item.type === 'divider') {
-                            return `<li class="sidebar-divider"></li>`;
-                        }
-                        
-                        const isActive = item.active || false;
-                        return `
-                            <li class="sidebar-nav-item">
-                                <button 
-                                    class="sidebar-nav-link ${isActive ? 'active' : ''}" 
-                                    data-page="${item.id}"
-                                    title="${item.label}"
-                                    aria-label="${item.label}"
-                                    ${isActive ? 'aria-current="page"' : ''}
-                                >
-                                    <i class="${item.icon || 'fas fa-circle'}"></i>
-                                    ${!collapsed ? `<span>${item.label}</span>` : ''}
-                                    ${isActive && !collapsed ? '<span class="active-indicator"></span>' : ''}
-                                </button>
-                            </li>
-                        `;
-                    }).join('')}
-                </ul>
-            </nav>
+  function render(items = [], opts = {}) {
+    const options = { ...DEFAULTS, ...opts };
 
-            <div class="sidebar-footer">
-                ${!collapsed ? `
-                    <div class="sidebar-user">
-                        <div class="sidebar-user-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="sidebar-user-info">
-                            <div class="sidebar-user-name">Administrador</div>
-                            <div class="sidebar-user-role">Admin</div>
-                        </div>
-                    </div>
-                ` : `
-                    <div class="sidebar-user collapsed">
-                        <div class="sidebar-user-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                    </div>
-                `}
+    const aside = document.createElement("aside");
+    aside.className = "c-sidebar";
+    aside.setAttribute("role", "navigation");
+    aside.setAttribute("aria-label", "Menu lateral");
 
-                <div class="sidebar-theme-toggle">
-                    <i class="fas fa-moon ${currentTheme === 'dark' ? 'active' : ''}" data-theme="dark"></i>
-                    <div class="theme-switch" id="theme-switch">
-                        <input type="checkbox" id="theme-toggle-checkbox" ${currentTheme === 'light' ? 'checked' : ''}>
-                        <span class="theme-slider"></span>
-                    </div>
-                    <i class="fas fa-sun ${currentTheme === 'light' ? 'active' : ''}" data-theme="light"></i>
-                </div>
-            </div>
-        `;
+    aside.innerHTML = `
+      <div class="c-sidebar__brand">
+        <div class="c-sidebar__brandTitle">${escapeHtml(options.brand)}</div>
+        <div class="c-sidebar__brandSubtitle">${escapeHtml(options.subtitle)}</div>
+      </div>
 
-        return sidebar;
-    },
+      <div class="c-sidebar__content">
+        <ul class="c-sidebar__list" data-sidebar-list></ul>
+      </div>
+    `;
 
-    /**
-     * Configura eventos da sidebar
-     * @param {Function} onItemClick - Callback para clique nos itens
-     */
-    onItemClick(onItemClick) {
-        document.addEventListener('click', (e) => {
-            // Clique no toggle da sidebar
-            if (e.target.closest('#sidebar-toggle')) {
-                e.preventDefault();
-                this.toggleSidebar();
-                return;
-            }
+    const list = aside.querySelector("[data-sidebar-list]");
+    list.appendChild(buildItems(items));
 
-            // Clique no logo
-            if (e.target.closest('.sidebar-logo')) {
-                e.preventDefault();
-                const page = e.target.closest('.sidebar-logo').dataset.page;
-                if (page && onItemClick) {
-                    onItemClick(page);
-                }
-                return;
-            }
+    // Eventos (delegação)
+    aside.addEventListener("click", (e) => {
+      const item = e.target.closest("[data-sidebar-item]");
+      if (!item) return;
 
-            // Clique nos itens de navegação
-            const navLink = e.target.closest('.sidebar-nav-link');
-            if (navLink) {
-                e.preventDefault();
-                const page = navLink.dataset.page;
-                if (page && onItemClick) {
-                    onItemClick(page);
-                }
-                return;
-            }
+      const id = item.getAttribute("data-sidebar-item");
+      if (!id) return;
 
-            // Clique no toggle de tema
-            const themeIcon = e.target.closest('[data-theme]');
-            if (themeIcon) {
-                e.preventDefault();
-                const theme = themeIcon.dataset.theme;
-                this.toggleTheme(theme);
-                return;
-            }
+      setActiveItem(id);
 
-            // Clique no checkbox do tema
-            const themeCheckbox = e.target.closest('#theme-toggle-checkbox');
-            if (themeCheckbox) {
-                const theme = themeCheckbox.checked ? 'light' : 'dark';
-                this.toggleTheme(theme);
-                return;
-            }
-        });
-    },
+      if (typeof onClickHandler === "function") {
+        onClickHandler(id);
+      }
+    });
 
-    /**
-     * Alterna entre sidebar expandida/recolhida
-     */
-    toggleSidebar() {
-        const sidebar = document.querySelector('.sidebar');
-        const isCollapsed = sidebar.classList.contains('collapsed');
-        
-        sidebar.classList.toggle('collapsed', !isCollapsed);
-        localStorage.setItem(SIDEBAR_COLLAPSE_KEY, !isCollapsed);
-        
-        // Dispara evento personalizado para que outros componentes saibam
-        window.dispatchEvent(new CustomEvent('sidebarToggle', {
-            detail: { collapsed: !isCollapsed }
-        }));
-    },
+    return aside;
+  }
 
-    /**
-     * Alterna entre temas claro/escuro
-     * @param {string} theme - 'light' ou 'dark'
-     */
-    toggleTheme(theme) {
-        const html = document.documentElement;
-        const newTheme = theme || (html.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
-        
-        html.setAttribute('data-theme', newTheme);
-        localStorage.setItem(SIDEBAR_THEME_KEY, newTheme);
-        
-        // Atualiza ícones ativos
-        document.querySelectorAll('[data-theme]').forEach(icon => {
-            icon.classList.toggle('active', icon.dataset.theme === newTheme);
-        });
-        
-        // Atualiza checkbox
-        const checkbox = document.getElementById('theme-toggle-checkbox');
-        if (checkbox) {
-            checkbox.checked = newTheme === 'light';
-        }
-        
-        // Dispara evento personalizado
-        window.dispatchEvent(new CustomEvent('themeChange', {
-            detail: { theme: newTheme }
-        }));
-    },
+  function mount(targetEl, items = [], opts = {}) {
+    if (!targetEl) throw new Error("Sidebar.mount: targetEl é obrigatório");
+    containerEl = targetEl;
+    containerEl.innerHTML = "";
+    containerEl.appendChild(render(items, opts));
+  }
 
-    /**
-     * Atualiza o item ativo na sidebar
-     * @param {string} pageId - ID da página ativa
-     */
-    setActiveItem(pageId) {
-        document.querySelectorAll('.sidebar-nav-link').forEach(link => {
-            const isActive = link.dataset.page === pageId;
-            link.classList.toggle('active', isActive);
-            link.setAttribute('aria-current', isActive ? 'page' : null);
-        });
-    },
+  function onItemClick(cb) {
+    onClickHandler = cb;
+  }
 
-    /**
-     * Retorna o estado atual da sidebar
-     * @returns {boolean} Se está recolhida
-     */
-    isCollapsed() {
-        const sidebar = document.querySelector('.sidebar');
-        return sidebar ? sidebar.classList.contains('collapsed') : false;
-    },
+  function setActiveItem(id) {
+    const root = getRoot();
+    if (!root) return;
 
-    /**
-     * Retorna o tema atual
-     * @returns {string} 'light' ou 'dark'
-     */
-    getCurrentTheme() {
-        return document.documentElement.getAttribute('data-theme') || 'dark';
-    },
+    const all = root.querySelectorAll("[data-sidebar-item]");
+    all.forEach((el) => el.classList.remove("is-active"));
 
-    /**
-     * Adiciona um item à sidebar (dinamicamente)
-     * @param {Object} item - Item a ser adicionado
-     */
-    addItem(item) {
-        const navList = document.querySelector('.sidebar-nav-list');
-        if (!navList) return;
+    const active = root.querySelector(`[data-sidebar-item="${cssEscape(id)}"]`);
+    if (active) active.classList.add("is-active");
+  }
 
-        const li = document.createElement('li');
-        li.className = 'sidebar-nav-item';
-        li.innerHTML = `
-            <button 
-                class="sidebar-nav-link" 
-                data-page="${item.id}"
-                title="${item.label}"
-                aria-label="${item.label}"
-            >
-                <i class="${item.icon || 'fas fa-circle'}"></i>
-                ${!this.isCollapsed() ? `<span>${item.label}</span>` : ''}
-            </button>
-        `;
+  function buildItems(items) {
+    const frag = document.createDocumentFragment();
 
-        navList.appendChild(li);
-    },
+    items.forEach((it) => {
+      if (it?.type === "divider") {
+        const li = document.createElement("li");
+        li.className = "c-sidebar__divider";
+        frag.appendChild(li);
+        return;
+      }
 
-    /**
-     * Remove um item da sidebar
-     * @param {string} itemId - ID do item a ser removido
-     */
-    removeItem(itemId) {
-        const item = document.querySelector(`[data-page="${itemId}"]`);
-        if (item && item.closest('.sidebar-nav-item')) {
-            item.closest('.sidebar-nav-item').remove();
-        }
-    },
+      const li = document.createElement("li");
+      li.className = "c-sidebar__item";
 
-    /**
-     * Atualiza informações do usuário
-     * @param {Object} userInfo - Informações do usuário
-     */
-    updateUserInfo(userInfo) {
-        const userName = document.querySelector('.sidebar-user-name');
-        const userRole = document.querySelector('.sidebar-user-role');
-        const userAvatar = document.querySelector('.sidebar-user-avatar i');
-        
-        if (userName && userInfo.name) userName.textContent = userInfo.name;
-        if (userRole && userInfo.role) userRole.textContent = userInfo.role;
-        if (userAvatar && userInfo.avatarIcon) {
-            userAvatar.className = userInfo.avatarIcon;
-        }
-    },
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "c-sidebar__btn";
+      btn.setAttribute("data-sidebar-item", it.id);
 
-    /**
-     * Destrói a sidebar (limpa eventos)
-     */
-    destroy() {
-        // Remove event listeners específicos se necessário
-        const sidebar = document.querySelector('.sidebar');
-        if (sidebar) {
-            sidebar.replaceWith(sidebar.cloneNode(true));
-        }
-    }
-};
+      if (it.active) btn.classList.add("is-active");
+
+      btn.innerHTML = `
+        <span class="c-sidebar__icon" aria-hidden="true">
+          ${it.icon ? `<i class="${escapeAttr(it.icon)}"></i>` : ""}
+        </span>
+        <span class="c-sidebar__label">${escapeHtml(it.label ?? it.id)}</span>
+      `;
+
+      li.appendChild(btn);
+      frag.appendChild(li);
+    });
+
+    return frag;
+  }
+
+  function getRoot() {
+    if (!containerEl) return document.querySelector(".c-sidebar");
+    return containerEl.querySelector(".c-sidebar");
+  }
+
+  // Helpers
+  function escapeHtml(str) {
+    return String(str ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function escapeAttr(str) {
+    return escapeHtml(str).replaceAll("`", "&#096;");
+  }
+
+  // cssEscape simples (suficiente para ids comuns)
+  function cssEscape(str) {
+    return String(str ?? "").replaceAll('"', '\\"');
+  }
+
+  return { render, mount, onItemClick, setActiveItem };
+})();

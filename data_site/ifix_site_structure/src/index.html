@@ -349,8 +349,36 @@
       updateOnlineStatus();
     });
   </script>
-
   <!-- Script principal -->
-  <script type="module" src="./app.js"></script>
+    <!-- ===== Scripts do sistema (JS puro, ordem importa) ===== -->
+
+  <!-- DATA -->
+  <script src="./src/data/storage.js"></script>
+  <script src="./src/data/os.repo.js"></script>
+  <script src="./src/data/price.repo.js"></script>
+
+  <!-- SERVICES -->
+  <script src="./src/services/format.service.js"></script>
+  <script src="./src/services/validate.service.js"></script>
+  <script src="./src/services/notify.service.js"></script>
+  <script src="./src/services/whatsapp.service.js"></script>
+  <script src="./src/services/pdf.service.js"></script>
+  <script src="./src/services/index.js"></script>
+
+  <!-- COMPONENTS -->
+  <script src="./src/components/sidebar.js"></script>
+  <script src="./src/components/tabs.js"></script>
+  <script src="./src/components/table.js"></script>
+  <script src="./src/components/modal.js"></script>
+  <script src="./src/components/form.js"></script>
+  <script src="./src/components/card.js"></script>
+
+  <!-- PAGES -->
+  <script src="./src/pages/dashboard.page.js"></script>
+  <script src="./src/pages/price.page.js"></script>
+
+  <!-- APP (SEM module) -->
+  <script src="./app.js"></script>
+
 </body>
 </html>
