@@ -1,396 +1,590 @@
 // src/data/crm.repo.js
 // Repositório de Clientes (CRM)
-// Responsabilidade: CRUD + buscas/filtros + persistência via storage.js
-// UI não entra aqui.
+// Responsabilidade: CRUD + buscas/filtros + validação + relacionamentos
 
-import { Storage } from "./storage.js";
+import Storage from "./storage.js";
 
-const STORE_KEY = "ifix_crm_clients_v1";
+// Constantes
+const COLLECTION_NAME = "clients";
+const VALID_STATUSES = ["active", "archived", "inactive"];
+const MIN_PHONE_LENGTH = 10;
+const MAX_PHONE_LENGTH = 15;
 
-/**
- * Modelo base de Cliente
- * @typedef {Object} Client
- * @property {string} id
- * @property {string} name
- * @property {string|null} phone
- * @property {string|null} email
- * @property {string|null} cpf
- * @property {string|null} document   // RG/CNPJ/outros (livre)
- * @property {string|null} city
- * @property {string|null} neighborhood
- * @property {string|null} address
- * @property {string|null} notes
- * @property {string[]} tags
- * @property {"active"|"archived"} status
- * @property {number} createdAt
- * @property {number} updatedAt
- */
-
-function now() {
-  return Date.now();
-}
-
-// ID simples e estável (bom o suficiente para MVP offline)
-function uid(prefix = "cli") {
-  return `${prefix}_${now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function toStr(v) {
-  return (v ?? "").toString().trim();
-}
-
-function normalizePhone(phone) {
-  const digits = toStr(phone).replace(/\D/g, "");
-  if (!digits) return null;
-  // Mantém só números; UI decide como formatar
-  return digits;
-}
-
-function normalizeEmail(email) {
-  const e = toStr(email).toLowerCase();
-  return e ? e : null;
-}
-
-function normalizeCPF(cpf) {
-  const digits = toStr(cpf).replace(/\D/g, "");
-  return digits ? digits : null;
-}
-
-function normalizeTags(tags) {
-  if (!tags) return [];
-  if (Array.isArray(tags)) {
-    return tags.map(t => toStr(t)).filter(Boolean);
+// Erros customizados
+class CRMError extends Error {
+  constructor(message, code = "CRM_ERROR", details = null) {
+    super(message);
+    this.name = "CRMError";
+    this.code = code;
+    this.details = details;
   }
-  // aceita "tag1, tag2"
-  return toStr(tags)
-    .split(",")
-    .map(t => t.trim())
-    .filter(Boolean);
 }
 
-function validateClientPayload(payload, { partial = false } = {}) {
-  // partial=true permite update sem todos os campos obrigatórios
-  const errors = [];
-
-  const name = toStr(payload?.name);
-  if (!partial && !name) errors.push("Nome é obrigatório.");
-  if (name && name.length < 2) errors.push("Nome muito curto (mín. 2 caracteres).");
-
-  const phone = normalizePhone(payload?.phone);
-  if (phone && phone.length < 10) errors.push("Telefone inválido (mín. 10 dígitos).");
-
-  const email = normalizeEmail(payload?.email);
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errors.push("E-mail inválido.");
-  }
-
-  const cpf = normalizeCPF(payload?.cpf);
-  if (cpf && !(cpf.length === 11 || cpf.length === 14)) {
-    // 11 CPF, 14 CNPJ (se você quiser usar o mesmo campo)
-    errors.push("Documento (CPF/CNPJ) inválido.");
-  }
-
-  return errors;
-}
-
-function applyDefaults(payload) {
-  /** @type {Client} */
-  const base = {
-    id: uid(),
-    name: toStr(payload?.name),
-    phone: normalizePhone(payload?.phone),
-    email: normalizeEmail(payload?.email),
-    cpf: normalizeCPF(payload?.cpf),
-    document: toStr(payload?.document) || null,
-    city: toStr(payload?.city) || null,
-    neighborhood: toStr(payload?.neighborhood) || null,
-    address: toStr(payload?.address) || null,
-    notes: toStr(payload?.notes) || null,
-    tags: normalizeTags(payload?.tags),
-    status: payload?.status === "archived" ? "archived" : "active",
-    createdAt: now(),
-    updatedAt: now(),
-  };
-
-  return base;
-}
-
-function mergeForUpdate(existing, patch) {
-  const merged = {
-    ...existing,
-    ...patch,
-    // normalizações importantes
-    name: patch?.name !== undefined ? toStr(patch.name) : existing.name,
-    phone: patch?.phone !== undefined ? normalizePhone(patch.phone) : existing.phone,
-    email: patch?.email !== undefined ? normalizeEmail(patch.email) : existing.email,
-    cpf: patch?.cpf !== undefined ? normalizeCPF(patch.cpf) : existing.cpf,
-    document: patch?.document !== undefined ? (toStr(patch.document) || null) : existing.document,
-    city: patch?.city !== undefined ? (toStr(patch.city) || null) : existing.city,
-    neighborhood:
-      patch?.neighborhood !== undefined ? (toStr(patch.neighborhood) || null) : existing.neighborhood,
-    address: patch?.address !== undefined ? (toStr(patch.address) || null) : existing.address,
-    notes: patch?.notes !== undefined ? (toStr(patch.notes) || null) : existing.notes,
-    tags: patch?.tags !== undefined ? normalizeTags(patch.tags) : existing.tags,
-    status: patch?.status === "archived" ? "archived" : patch?.status === "active" ? "active" : existing.status,
-    updatedAt: now(),
-  };
-
-  return merged;
-}
-
-async function loadAll() {
-  const data = await Storage.get(STORE_KEY);
-  if (!data) return [];
-  if (!Array.isArray(data)) return [];
-  return data;
-}
-
-async function saveAll(list) {
-  await Storage.set(STORE_KEY, list);
-}
-
-function includesText(haystack, needle) {
-  if (!needle) return true;
-  return haystack.includes(needle);
-}
-
-function buildSearchIndex(client) {
-  // índice simples para busca rápida
-  const parts = [
-    client.name,
-    client.phone ?? "",
-    client.email ?? "",
-    client.cpf ?? "",
-    client.document ?? "",
-    client.city ?? "",
-    client.neighborhood ?? "",
-    client.address ?? "",
-    client.notes ?? "",
-    ...(client.tags ?? []),
-  ];
-  return parts.join(" ").toLowerCase();
-}
-
-function sortClients(list, sortBy, order) {
-  const dir = order === "asc" ? 1 : -1;
-
-  const keyFn = (c) => {
-    switch (sortBy) {
-      case "name":
-        return (c.name || "").toLowerCase();
-      case "updatedAt":
-        return c.updatedAt || 0;
-      case "createdAt":
-      default:
-        return c.createdAt || 0;
+// ==================== VALIDAÇÃO ====================
+const Validators = {
+  required(value, fieldName) {
+    if (value === null || value === undefined || value === "") {
+      return `O campo ${fieldName} é obrigatório`;
     }
-  };
-
-  return [...list].sort((a, b) => {
-    const ka = keyFn(a);
-    const kb = keyFn(b);
-    if (ka < kb) return -1 * dir;
-    if (ka > kb) return 1 * dir;
-    return 0;
-  });
-}
-
-function paginate(list, page, pageSize) {
-  const p = Math.max(1, Number(page || 1));
-  const ps = Math.max(1, Number(pageSize || 20));
-  const total = list.length;
-  const totalPages = Math.max(1, Math.ceil(total / ps));
-  const start = (p - 1) * ps;
-  const end = start + ps;
-
-  return {
-    page: p,
-    pageSize: ps,
-    total,
-    totalPages,
-    items: list.slice(start, end),
-  };
-}
-
-/**
- * CRMRepo - API pública do repositório
- */
-export const CRMRepo = {
-  /**
-   * Inicializa o store com array vazio se não existir.
-   */
-  async init() {
-    const current = await Storage.get(STORE_KEY);
-    if (!current) await Storage.set(STORE_KEY, []);
-    return true;
+    return null;
   },
 
-  /**
-   * Lista com filtros.
-   * @param {Object} [opts]
-   * @param {string} [opts.q] Busca textual (nome, telefone, email, tags, etc.)
-   * @param {"active"|"archived"|"all"} [opts.status]
-   * @param {string[]} [opts.tags] exige TODAS as tags
-   * @param {"createdAt"|"updatedAt"|"name"} [opts.sortBy]
-   * @param {"asc"|"desc"} [opts.order]
-   * @param {number} [opts.page]
-   * @param {number} [opts.pageSize]
-   */
-  async list(opts = {}) {
-    const {
-      q = "",
-      status = "active",
-      tags = [],
-      sortBy = "updatedAt",
-      order = "desc",
-      page = 1,
-      pageSize = 20,
-    } = opts;
+  minLength(value, fieldName, min) {
+    if (value && value.length < min) {
+      return `${fieldName} deve ter pelo menos ${min} caracteres`;
+    }
+    return null;
+  },
 
-    const needle = toStr(q).toLowerCase();
-    const wantedTags = Array.isArray(tags) ? tags.map(t => toStr(t)).filter(Boolean) : [];
+  maxLength(value, fieldName, max) {
+    if (value && value.length > max) {
+      return `${fieldName} não pode ter mais de ${max} caracteres`;
+    }
+    return null;
+  },
 
-    const all = await loadAll();
+  email(value) {
+    if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      return "Email inválido";
+    }
+    return null;
+  },
 
-    let filtered = all;
+  phone(value) {
+    if (!value) return null;
+    
+    const digits = value.replace(/\D/g, "");
+    if (digits.length < MIN_PHONE_LENGTH) {
+      return `Telefone deve ter pelo menos ${MIN_PHONE_LENGTH} dígitos`;
+    }
+    if (digits.length > MAX_PHONE_LENGTH) {
+      return `Telefone não pode ter mais de ${MAX_PHONE_LENGTH} dígitos`;
+    }
+    return null;
+  },
 
-    if (status !== "all") {
-      filtered = filtered.filter(c => (c.status || "active") === status);
+  cpfCnpj(value) {
+    if (!value) return null;
+    
+    const digits = value.replace(/\D/g, "");
+    if (digits.length === 11) {
+      // Validação básica de CPF
+      if (/^(\d)\1{10}$/.test(digits)) return "CPF inválido";
+    } else if (digits.length === 14) {
+      // Validação básica de CNPJ
+      if (/^(\d)\1{13}$/.test(digits)) return "CNPJ inválido";
+    } else {
+      return "CPF/CNPJ deve ter 11 ou 14 dígitos";
+    }
+    return null;
+  },
+
+  status(value) {
+    if (value && !VALID_STATUSES.includes(value)) {
+      return `Status inválido. Use: ${VALID_STATUSES.join(", ")}`;
+    }
+    return null;
+  }
+};
+
+// ==================== NORMALIZAÇÃO ====================
+const Normalizers = {
+  text(value) {
+    return value ? String(value).trim() : "";
+  },
+
+  phone(value) {
+    if (!value) return null;
+    const digits = String(value).replace(/\D/g, "");
+    return digits || null;
+  },
+
+  email(value) {
+    if (!value) return null;
+    return String(value).trim().toLowerCase();
+  },
+
+  cpfCnpj(value) {
+    if (!value) return null;
+    return String(value).replace(/\D/g, "") || null;
+  },
+
+  tags(value) {
+    if (!value) return [];
+    if (Array.isArray(value)) {
+      return value.map(v => String(v).trim()).filter(Boolean);
+    }
+    if (typeof value === "string") {
+      return value.split(",")
+        .map(v => v.trim())
+        .filter(Boolean);
+    }
+    return [];
+  },
+
+  date(value) {
+    if (!value) return null;
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === "number") return new Date(value).toISOString();
+    return String(value);
+  }
+};
+
+// ==================== REPOSITÓRIO ====================
+export const CRMRepo = {
+  collection: Storage.collection(COLLECTION_NAME),
+
+  // ==================== CRUD ====================
+  async create(data) {
+    // Normalização
+    const normalized = {
+      name: Normalizers.text(data.name),
+      email: Normalizers.email(data.email),
+      phone: Normalizers.phone(data.phone),
+      cpfCnpj: Normalizers.cpfCnpj(data.cpfCnpj),
+      document: Normalizers.text(data.document),
+      address: Normalizers.text(data.address),
+      city: Normalizers.text(data.city),
+      state: Normalizers.text(data.state),
+      neighborhood: Normalizers.text(data.neighborhood),
+      zipCode: Normalizers.text(data.zipCode),
+      notes: Normalizers.text(data.notes),
+      tags: Normalizers.tags(data.tags),
+      status: data.status || "active",
+      metadata: {
+        source: data.metadata?.source || "manual",
+        assignedTo: data.metadata?.assignedTo || null,
+        customFields: data.metadata?.customFields || {}
+      }
+    };
+
+    // Validação
+    const errors = this.validate(normalized);
+    if (errors.length > 0) {
+      throw new CRMError("Validação falhou", "VALIDATION_ERROR", errors);
     }
 
-    if (wantedTags.length) {
-      filtered = filtered.filter(c => {
-        const set = new Set((c.tags || []).map(t => toStr(t)));
-        return wantedTags.every(t => set.has(t));
+    // Verificar duplicatas
+    const duplicates = await this.findDuplicates(normalized);
+    if (duplicates.length > 0) {
+      throw new CRMError(
+        "Cliente duplicado encontrado",
+        "DUPLICATE_ERROR",
+        { duplicates, fields: duplicates.map(d => d.field) }
+      );
+    }
+
+    // Criar
+    return this.collection.create({
+      ...normalized,
+      fullTextSearch: this.buildSearchIndex(normalized),
+      statistics: {
+        totalOrders: 0,
+        totalSpent: 0,
+        lastOrderAt: null,
+        orderCount: 0
+      }
+    });
+  },
+
+  async update(id, data) {
+    const existing = this.collection.findById(id);
+    if (!existing) {
+      throw new CRMError("Cliente não encontrado", "NOT_FOUND");
+    }
+
+    // Normalizar apenas campos fornecidos
+    const updates = {};
+    const fields = Object.keys(data);
+    
+    fields.forEach(field => {
+      if (Normalizers[field]) {
+        updates[field] = Normalizers[field](data[field]);
+      } else if (field === "metadata") {
+        updates.metadata = {
+          ...existing.metadata,
+          ...data.metadata,
+          customFields: {
+            ...existing.metadata?.customFields,
+            ...data.metadata?.customFields
+          }
+        };
+      } else {
+        updates[field] = data[field];
+      }
+    });
+
+    // Validação parcial
+    const errors = this.validate(updates, { partial: true });
+    if (errors.length > 0) {
+      throw new CRMError("Validação falhou", "VALIDATION_ERROR", errors);
+    }
+
+    // Verificar duplicatas (excluindo o próprio)
+    const checkData = { ...existing, ...updates };
+    const duplicates = await this.findDuplicates(checkData, id);
+    if (duplicates.length > 0) {
+      throw new CRMError(
+        "Cliente duplicado encontrado",
+        "DUPLICATE_ERROR",
+        { duplicates }
+      );
+    }
+
+    // Atualizar
+    const updated = this.collection.update(id, {
+      ...updates,
+      fullTextSearch: this.buildSearchIndex(checkData)
+    });
+
+    return updated;
+  },
+
+  async delete(id, hardDelete = false) {
+    if (hardDelete) {
+      const success = this.collection.delete(id);
+      if (!success) {
+        throw new CRMError("Cliente não encontrado", "NOT_FOUND");
+      }
+      return { success: true, method: "hard" };
+    }
+
+    // Soft delete (arquivamento)
+    const updated = await this.update(id, { 
+      status: "archived",
+      deletedAt: Storage.nowISO()
+    });
+    return { success: true, method: "soft", client: updated };
+  },
+
+  async restore(id) {
+    const client = this.collection.findById(id);
+    if (!client) {
+      throw new CRMError("Cliente não encontrado", "NOT_FOUND");
+    }
+
+    return this.update(id, { 
+      status: "active",
+      deletedAt: null 
+    });
+  },
+
+  // ==================== QUERIES ====================
+  async find(filters = {}) {
+    let query = this.collection.all();
+    
+    // Filtro por status
+    if (filters.status) {
+      if (filters.status === "all") {
+        // Inclui todos
+      } else if (filters.status === "active_only") {
+        query = query.filter(c => c.status === "active" && !c.deletedAt);
+      } else {
+        query = query.filter(c => c.status === filters.status);
+      }
+    }
+
+    // Filtro por tags
+    if (filters.tags && filters.tags.length > 0) {
+      query = query.filter(c => {
+        const clientTags = c.tags || [];
+        return filters.tags.every(tag => clientTags.includes(tag));
       });
     }
 
-    if (needle) {
-      filtered = filtered.filter(c => includesText(buildSearchIndex(c), needle));
+    // Busca textual
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      query = query.filter(c => 
+        (c.fullTextSearch || "").toLowerCase().includes(searchTerm) ||
+        (c.name || "").toLowerCase().includes(searchTerm) ||
+        (c.email || "").toLowerCase().includes(searchTerm) ||
+        (c.phone || "").includes(searchTerm)
+      );
     }
 
-    const sorted = sortClients(filtered, sortBy, order);
-    return paginate(sorted, page, pageSize);
-  },
-
-  /**
-   * Retorna um cliente por ID.
-   */
-  async getById(id) {
-    const key = toStr(id);
-    if (!key) return null;
-    const all = await loadAll();
-    return all.find(c => c.id === key) || null;
-  },
-
-  /**
-   * Cria um cliente.
-   * @returns {{ok:true, client:Client} | {ok:false, errors:string[]}}
-   */
-  async create(payload) {
-    const errors = validateClientPayload(payload, { partial: false });
-    if (errors.length) return { ok: false, errors };
-
-    const all = await loadAll();
-
-    // Regras simples anti-duplicidade (opcional, mas recomendado)
-    const phone = normalizePhone(payload?.phone);
-    const email = normalizeEmail(payload?.email);
-    const cpf = normalizeCPF(payload?.cpf);
-
-    if (phone && all.some(c => c.phone === phone && c.status !== "archived")) {
-      return { ok: false, errors: ["Já existe um cliente ativo com este telefone."] };
+    // Filtro por data
+    if (filters.createdAfter) {
+      const date = new Date(filters.createdAfter);
+      query = query.filter(c => new Date(c.createdAt) >= date);
     }
-    if (email && all.some(c => c.email === email && c.status !== "archived")) {
-      return { ok: false, errors: ["Já existe um cliente ativo com este e-mail."] };
-    }
-    if (cpf && all.some(c => c.cpf === cpf && c.status !== "archived")) {
-      return { ok: false, errors: ["Já existe um cliente ativo com este documento."] };
+    
+    if (filters.createdBefore) {
+      const date = new Date(filters.createdBefore);
+      query = query.filter(c => new Date(c.createdAt) <= date);
     }
 
-    const client = applyDefaults(payload);
-    all.push(client);
-    await saveAll(all);
+    // Ordenação
+    const sortField = filters.sortBy || "updatedAt";
+    const sortOrder = filters.sortOrder === "asc" ? 1 : -1;
+    
+    query.sort((a, b) => {
+      const aVal = a[sortField] || "";
+      const bVal = b[sortField] || "";
+      
+      if (aVal < bVal) return -1 * sortOrder;
+      if (aVal > bVal) return 1 * sortOrder;
+      return 0;
+    });
 
-    return { ok: true, client };
+    // Paginação
+    const page = Math.max(1, filters.page || 1);
+    const pageSize = Math.min(Math.max(1, filters.pageSize || 20), 100);
+    const total = query.length;
+    const totalPages = Math.ceil(total / pageSize);
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+
+    return {
+      items: query.slice(start, end),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    };
   },
 
-  /**
-   * Atualiza um cliente por ID.
-   * @returns {{ok:true, client:Client} | {ok:false, errors:string[]}}
-   */
-  async update(id, patch) {
-    const key = toStr(id);
-    if (!key) return { ok: false, errors: ["ID inválido."] };
+  async findById(id) {
+    const client = this.collection.findById(id);
+    if (!client) return null;
+    
+    // Enriquecer com estatísticas de ordens de serviço
+    const enriched = { ...client };
+    
+    // Nota: Em uma implementação real, buscaria de OSRepo
+    // enriched.statistics = await OSRepo.getClientStats(id);
+    
+    return enriched;
+  },
 
-    const errors = validateClientPayload(patch, { partial: true });
-    if (errors.length) return { ok: false, errors };
+  async search(query, options = {}) {
+    const { limit = 10, fields = ["name", "email", "phone", "cpfCnpj"] } = options;
+    const searchTerm = query.toLowerCase().trim();
+    
+    if (!searchTerm) return [];
 
-    const all = await loadAll();
-    const idx = all.findIndex(c => c.id === key);
-    if (idx === -1) return { ok: false, errors: ["Cliente não encontrado."] };
+    return this.collection.all()
+      .filter(client => {
+        return fields.some(field => {
+          const value = client[field];
+          return value && String(value).toLowerCase().includes(searchTerm);
+        });
+      })
+      .slice(0, limit);
+  },
 
-    const current = all[idx];
-    const updated = mergeForUpdate(current, patch);
+  // ==================== MÉTODOS AUXILIARES ====================
+  validate(data, options = {}) {
+    const { partial = false } = options;
+    const errors = [];
 
-    // Regras simples anti-duplicidade (quando mudar)
-    const phone = updated.phone;
-    const email = updated.email;
-    const cpf = updated.cpf;
-
-    if (phone && all.some(c => c.id !== key && c.phone === phone && c.status !== "archived")) {
-      return { ok: false, errors: ["Já existe um cliente ativo com este telefone."] };
+    // Campos obrigatórios (apenas para criação)
+    if (!partial) {
+      const requiredError = Validators.required(data.name, "nome");
+      if (requiredError) errors.push(requiredError);
     }
-    if (email && all.some(c => c.id !== key && c.email === email && c.status !== "archived")) {
-      return { ok: false, errors: ["Já existe um cliente ativo com este e-mail."] };
-    }
-    if (cpf && all.some(c => c.id !== key && c.cpf === cpf && c.status !== "archived")) {
-      return { ok: false, errors: ["Já existe um cliente ativo com este documento."] };
-    }
 
-    all[idx] = updated;
-    await saveAll(all);
-
-    return { ok: true, client: updated };
-  },
-
-  /**
-   * Arquiva (soft delete). Mantém histórico.
-   */
-  async archive(id) {
-    return this.update(id, { status: "archived" });
-  },
-
-  /**
-   * Restaura cliente arquivado.
-   */
-  async restore(id) {
-    return this.update(id, { status: "active" });
-  },
-
-  /**
-   * Remove definitivamente (hard delete).
-   * Use com cautela.
-   */
-  async remove(id) {
-    const key = toStr(id);
-    if (!key) return { ok: false, errors: ["ID inválido."] };
-
-    const all = await loadAll();
-    const next = all.filter(c => c.id !== key);
-    if (next.length === all.length) {
-      return { ok: false, errors: ["Cliente não encontrado."] };
+    // Validações condicionais
+    if (data.name && data.name.length > 0) {
+      const minError = Validators.minLength(data.name, "Nome", 2);
+      if (minError) errors.push(minError);
+      
+      const maxError = Validators.maxLength(data.name, "Nome", 200);
+      if (maxError) errors.push(maxError);
     }
 
-    await saveAll(next);
-    return { ok: true };
+    if (data.email) {
+      const emailError = Validators.email(data.email);
+      if (emailError) errors.push(emailError);
+    }
+
+    if (data.phone) {
+      const phoneError = Validators.phone(data.phone);
+      if (phoneError) errors.push(phoneError);
+    }
+
+    if (data.cpfCnpj) {
+      const docError = Validators.cpfCnpj(data.cpfCnpj);
+      if (docError) errors.push(docError);
+    }
+
+    if (data.status) {
+      const statusError = Validators.status(data.status);
+      if (statusError) errors.push(statusError);
+    }
+
+    return errors;
   },
 
-  /**
-   * Utilitário: limpa tudo (somente dev/teste).
-   */
-  async clearAll() {
-    await saveAll([]);
-    return { ok: true };
+  async findDuplicates(data, excludeId = null) {
+    const allClients = this.collection.all();
+    const duplicates = [];
+
+    // Verificar por email
+    if (data.email) {
+      const match = allClients.find(c => 
+        c.email === data.email && 
+        c.id !== excludeId &&
+        c.status !== "archived"
+      );
+      if (match) duplicates.push({ field: "email", client: match });
+    }
+
+    // Verificar por telefone
+    if (data.phone) {
+      const match = allClients.find(c => 
+        c.phone === data.phone && 
+        c.id !== excludeId &&
+        c.status !== "archived"
+      );
+      if (match) duplicates.push({ field: "phone", client: match });
+    }
+
+    // Verificar por CPF/CNPJ
+    if (data.cpfCnpj) {
+      const match = allClients.find(c => 
+        c.cpfCnpj === data.cpfCnpj && 
+        c.id !== excludeId &&
+        c.status !== "archived"
+      );
+      if (match) duplicates.push({ field: "cpfCnpj", client: match });
+    }
+
+    return duplicates;
   },
+
+  buildSearchIndex(client) {
+    const fields = [
+      client.name,
+      client.email,
+      client.phone,
+      client.cpfCnpj,
+      client.document,
+      client.address,
+      client.city,
+      client.state,
+      client.neighborhood,
+      client.zipCode,
+      ...(client.tags || [])
+    ].filter(Boolean).join(" ").toLowerCase();
+
+    return fields;
+  },
+
+  // ==================== ESTATÍSTICAS ====================
+  async getStats() {
+    const clients = this.collection.all();
+    
+    const stats = {
+      total: clients.length,
+      byStatus: clients.reduce((acc, c) => {
+        const status = c.status || "unknown";
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, {}),
+      byCity: clients.reduce((acc, c) => {
+        const city = c.city || "Não informado";
+        acc[city] = (acc[city] || 0) + 1;
+        return acc;
+      }, {}),
+      createdThisMonth: clients.filter(c => {
+        const created = new Date(c.createdAt);
+        const now = new Date();
+        return created.getMonth() === now.getMonth() && 
+               created.getFullYear() === now.getFullYear();
+      }).length,
+      recentlyUpdated: clients.filter(c => {
+        const updated = new Date(c.updatedAt);
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return updated > weekAgo;
+      }).length
+    };
+
+    return stats;
+  },
+
+  async export(format = "json") {
+    const clients = this.collection.all();
+    
+    switch (format) {
+      case "json":
+        return JSON.stringify(clients, null, 2);
+        
+      case "csv":
+        if (clients.length === 0) return "";
+        
+        const headers = ["ID", "Nome", "Email", "Telefone", "Status", "Cidade", "Criado em"];
+        const rows = clients.map(c => [
+          c.id,
+          `"${c.name || ""}"`,
+          `"${c.email || ""}"`,
+          `"${c.phone || ""}"`,
+          c.status,
+          `"${c.city || ""}"`,
+          new Date(c.createdAt).toLocaleDateString("pt-BR")
+        ]);
+        
+        return [headers, ...rows].map(row => row.join(",")).join("\n");
+        
+      default:
+        throw new CRMError(`Formato não suportado: ${format}`, "EXPORT_ERROR");
+    }
+  },
+
+  async import(data, options = {}) {
+    const { merge = false, onConflict = "skip" } = options;
+    const imported = [];
+    const errors = [];
+    const skipped = [];
+
+    if (!Array.isArray(data)) {
+      throw new CRMError("Dados de importação devem ser um array", "IMPORT_ERROR");
+    }
+
+    for (const [index, item] of data.entries()) {
+      try {
+        // Verificar se já existe
+        const existing = this.collection.all().find(c => 
+          c.email === item.email || 
+          c.cpfCnpj === item.cpfCnpj
+        );
+
+        if (existing) {
+          if (onConflict === "skip") {
+            skipped.push({ index, item, reason: "Duplicado" });
+            continue;
+          } else if (onConflict === "update") {
+            const updated = await this.update(existing.id, item);
+            imported.push({ action: "updated", client: updated });
+          }
+        } else {
+          const created = await this.create(item);
+          imported.push({ action: "created", client: created });
+        }
+      } catch (error) {
+        errors.push({
+          index,
+          item,
+          error: error.message,
+          details: error.details
+        });
+      }
+    }
+
+    return {
+      imported: imported.length,
+      errors: errors.length,
+      skipped: skipped.length,
+      details: {
+        imported,
+        errors,
+        skipped
+      }
+    };
+  }
 };

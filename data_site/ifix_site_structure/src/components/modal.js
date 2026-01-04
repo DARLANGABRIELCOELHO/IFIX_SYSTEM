@@ -1,45 +1,72 @@
-// modal.js — modal reutilizável (UI pura)
-// Responsabilidade: abrir/fechar + conteúdo dinâmico + callback de fechamento
-
+// modal.js — modal reutilizável melhorado
 window.Modal = (function () {
-  let onCloseHandler = null;
+  let currentModal = null;
+  let focusableElements = [];
+  let focusedBeforeModal = null;
 
-  function create({ title = "Modal", content = null, footer = null, closeOnBackdrop = true } = {}) {
+  function create({ 
+    title = "Modal", 
+    content = null, 
+    footer = null, 
+    closeOnBackdrop = true,
+    closeOnEsc = true,
+    size = "md", // sm, md, lg, xl
+    className = "",
+    onOpen = null,
+    onClose = null,
+    preventClose = false
+  } = {}) {
     const overlay = document.createElement("div");
     overlay.className = "c-modal__overlay";
     overlay.setAttribute("role", "dialog");
     overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", `modal-title-${Date.now()}`);
 
-    overlay.innerHTML = `
-      <div class="c-modal" data-modal>
-        <div class="c-modal__header">
-          <div class="c-modal__title" data-modal-title></div>
-          <button class="c-modal__close" type="button" aria-label="Fechar" data-modal-close>×</button>
-        </div>
-        <div class="c-modal__body" data-modal-body></div>
-        <div class="c-modal__footer" data-modal-footer></div>
+    const modal = document.createElement("div");
+    modal.className = `c-modal c-modal--${size} ${className}`.trim();
+    modal.setAttribute("data-modal", "");
+
+    modal.innerHTML = `
+      <div class="c-modal__header">
+        <h2 class="c-modal__title" id="modal-title-${Date.now()}" data-modal-title></h2>
+        ${!preventClose ? '<button class="c-modal__close" type="button" aria-label="Fechar" data-modal-close>×</button>' : ''}
       </div>
+      <div class="c-modal__body" data-modal-body></div>
+      <div class="c-modal__footer" data-modal-footer></div>
     `;
 
-    overlay.querySelector("[data-modal-title]").textContent = title;
+    overlay.appendChild(modal);
 
-    const body = overlay.querySelector("[data-modal-body]");
-    const footerEl = overlay.querySelector("[data-modal-footer]");
+    modal.querySelector("[data-modal-title]").textContent = title;
+
+    const body = modal.querySelector("[data-modal-body]");
+    const footerEl = modal.querySelector("[data-modal-footer]");
 
     setContent(body, content);
     setContent(footerEl, footer);
 
-    overlay.addEventListener("click", (e) => {
-      const isCloseBtn = e.target.closest("[data-modal-close]");
-      const clickedOverlay = e.target === overlay;
+    // Eventos
+    if (!preventClose) {
+      overlay.addEventListener("click", (e) => {
+        const isCloseBtn = e.target.closest("[data-modal-close]");
+        const clickedOverlay = e.target === overlay;
 
-      if (isCloseBtn) close(overlay);
-      if (closeOnBackdrop && clickedOverlay) close(overlay);
-    });
+        if (isCloseBtn) close(overlay, onClose);
+        if (closeOnBackdrop && clickedOverlay) close(overlay, onClose);
+      });
 
-    // ESC fecha
+      if (closeOnEsc) {
+        overlay.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") close(overlay, onClose);
+        });
+      }
+    }
+
+    // Foco trap
     overlay.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") close(overlay);
+      if (e.key === "Tab") {
+        trapFocus(e, overlay);
+      }
     });
 
     return overlay;
@@ -47,24 +74,49 @@ window.Modal = (function () {
 
   function open(modalEl) {
     if (!modalEl) return;
+    
+    // Salva elemento com foco atual
+    focusedBeforeModal = document.activeElement;
+    
+    // Fecha modal anterior se existir
+    if (currentModal) {
+      currentModal.remove();
+    }
+    
     document.body.appendChild(modalEl);
-
-    // foco (básico)
+    currentModal = modalEl;
+    
+    // Foca no primeiro elemento interativo
     setTimeout(() => {
-      const closeBtn = modalEl.querySelector("[data-modal-close]");
-      closeBtn?.focus();
-    }, 0);
+      const focusable = getFocusableElements(modalEl);
+      focusableElements = focusable;
+      if (focusable.length > 0) {
+        focusable[0].focus();
+      }
+    }, 10);
+    
+    // Bloqueia scroll da página
+    document.body.style.overflow = "hidden";
   }
 
-  function close(modalEl) {
+  function close(modalEl, callback = null) {
     if (!modalEl) return;
+    
     modalEl.remove();
-
-    if (typeof onCloseHandler === "function") onCloseHandler();
-  }
-
-  function onClose(cb) {
-    onCloseHandler = cb;
+    currentModal = null;
+    
+    // Restaura scroll
+    document.body.style.overflow = "";
+    
+    // Retorna foco ao elemento anterior
+    if (focusedBeforeModal) {
+      focusedBeforeModal.focus();
+    }
+    
+    // Callback
+    if (typeof callback === "function") {
+      callback();
+    }
   }
 
   function setContent(targetEl, content) {
@@ -76,9 +128,62 @@ window.Modal = (function () {
       return;
     }
 
-    // string
-    targetEl.innerHTML = String(content);
+    // Pode ser string, array ou objeto
+    if (Array.isArray(content)) {
+      content.forEach(item => {
+        if (item instanceof Node) {
+          targetEl.appendChild(item);
+        } else {
+          const div = document.createElement("div");
+          div.innerHTML = item;
+          targetEl.appendChild(div);
+        }
+      });
+    } else {
+      targetEl.innerHTML = String(content);
+    }
   }
 
-  return { create, open, close, onClose };
+  function getFocusableElements(modalEl) {
+    const focusableSelectors = [
+      'a[href]',
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])'
+    ];
+    
+    return Array.from(modalEl.querySelectorAll(focusableSelectors.join(',')))
+      .filter(el => el.offsetParent !== null); // Somente visíveis
+  }
+
+  function trapFocus(e, modalEl) {
+    const focusable = getFocusableElements(modalEl);
+    if (focusable.length === 0) return;
+
+    const firstFocusable = focusable[0];
+    const lastFocusable = focusable[focusable.length - 1];
+
+    if (e.shiftKey) {
+      // Shift + Tab
+      if (document.activeElement === firstFocusable) {
+        e.preventDefault();
+        lastFocusable.focus();
+      }
+    } else {
+      // Tab
+      if (document.activeElement === lastFocusable) {
+        e.preventDefault();
+        firstFocusable.focus();
+      }
+    }
+  }
+
+  return { 
+    create, 
+    open, 
+    close, 
+    setContent 
+  };
 })();
