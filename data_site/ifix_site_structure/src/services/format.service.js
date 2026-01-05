@@ -11,6 +11,25 @@ export const FormatService = (() => {
     });
   }
 
+  /**
+   * Parse de moeda BR (aceita "R$ 1.234,56", "1234,56", "1234.56").
+   * Retorna number (NaN se inválido).
+   */
+  function parseCurrencyBRL(input) {
+    if (input === null || input === undefined) return NaN;
+    if (typeof input === 'number') return input;
+
+    const s = String(input)
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^R\$\s*/i, '')
+      .replace(/\./g, '')
+      .replace(',', '.');
+
+    const n = Number(s);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
   function formatCurrencyCompact(value) {
     const v = Number(value ?? 0);
     if (v >= 1000000) {
@@ -92,6 +111,47 @@ export const FormatService = (() => {
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} semanas atrás`;
     if (diffDays < 365) return `${Math.floor(diffDays / 30)} meses atrás`;
     return `${Math.floor(diffDays / 365)} anos atrás`;
+  }
+
+  /**
+   * Parse de data BR (DD/MM/YYYY) para Date. Retorna null se inválida.
+   */
+  function parseDateBR(input) {
+    if (!input) return null;
+    if (input instanceof Date) return Number.isNaN(input.getTime()) ? null : input;
+
+    const s = String(input).trim();
+    const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if (!m) {
+      const d = new Date(s);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    const day = Number(m[1]);
+    const month = Number(m[2]);
+    let year = Number(m[3]);
+    if (year < 100) year += 2000;
+
+    const d = new Date(year, month - 1, day);
+    // validação (Date corrige overflow; precisamos checar)
+    if (d.getFullYear() !== year || d.getMonth() !== (month - 1) || d.getDate() !== day) return null;
+    return d;
+  }
+
+  /**
+   * Date -> "YYYY-MM-DD" (útil para inputs type=date)
+   */
+  function toISODate(date) {
+    const d = date instanceof Date ? date : new Date(date);
+    if (Number.isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+  }
+
+  function nowISO() {
+    return new Date().toISOString();
   }
 
   function getWeekdayShort(date) {
@@ -211,6 +271,13 @@ export const FormatService = (() => {
     return phone || '';
   }
 
+  /**
+   * Normaliza para somente dígitos e limita a 11 (padrão BR). Útil para salvar/buscar.
+   */
+  function normalizePhoneBR(phone) {
+    return onlyDigits(phone).slice(0, 11);
+  }
+
   function formatPhoneWithDDI(phone) {
     const digits = onlyDigits(phone);
     if (digits.length >= 12) {
@@ -324,10 +391,13 @@ export const FormatService = (() => {
     // Moeda
     formatCurrency,
     formatCurrencyCompact,
+    parseCurrencyBRL,
     
     // Datas
     formatDate,
     formatRelativeDate,
+    parseDateBR,
+    toISODate,
     getWeekdayShort,
     getWeekdayLong,
     
@@ -349,10 +419,12 @@ export const FormatService = (() => {
     // Telefone
     formatPhone,
     formatPhoneWithDDI,
+    normalizePhoneBR,
     
     // Utilitários
     onlyDigits,
     safeHTML,
+    nowISO,
     pluralize,
     formatFileSize,
     formatDuration,

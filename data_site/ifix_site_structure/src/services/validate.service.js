@@ -274,6 +274,30 @@ export const ValidateService = (() => {
     };
   }
 
+  // ====================== SCHEMAS DO SISTEMA ======================
+  const Schemas = {
+    client: {
+      name: [required('Nome é obrigatório'), minLengthRule(2, 'Nome muito curto')],
+      phone: [required('Telefone é obrigatório'), phone('Telefone inválido')],
+      email: [(v) => (!v ? null : (isEmail(v) ? null : 'Email inválido'))],
+      document: [(v) => (!v ? null : (isCPForCNPJ(v) ? null : 'CPF/CNPJ inválido'))]
+    },
+    order: {
+      clientName: [required('Nome do cliente é obrigatório')],
+      clientPhone: [required('Telefone do cliente é obrigatório'), phone('Telefone inválido')],
+      device: [required('Dispositivo é obrigatório')],
+      status: [required('Status é obrigatório')]
+    }
+  };
+
+  function validateClient(client) {
+    return validateSchema(client || {}, Schemas.client);
+  }
+
+  function validateOrder(order) {
+    return validateSchema(order || {}, Schemas.order);
+  }
+
   // ====================== RULE BUILDERS ======================
   function required(message = 'Este campo é obrigatório') {
     return (value) => isRequired(value) ? null : message;
@@ -390,9 +414,12 @@ export const ValidateService = (() => {
     
     // Validações de URL
     isURL,
-    
-    // Schema validation
+
+    // Schema
     validateSchema,
+    Schemas,
+    validateClient,
+    validateOrder,
     
     // Rule builders
     required,

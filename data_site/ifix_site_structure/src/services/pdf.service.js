@@ -4,12 +4,26 @@ import { FormatService } from './format.service.js';
 export const PDFService = (() => {
   const config = {
     companyName: 'iFix Assistência Técnica',
-    companyAddress: 'Rua Exemplo, 123 - Centro, São Paulo/SP',
-    companyPhone: '(11) 99999-9999',
-    companyEmail: 'contato@ifix.com.br',
-    companyWebsite: 'www.ifix.com.br',
+    companyAddress: '',
+    companyPhone: '',
+    companyEmail: '',
+    companyWebsite: '',
+    technicianSignatureLabel: 'Responsável Técnico',
+    clientSignatureLabel: 'Assinatura do Cliente',
+    terms: [
+      'Garantia: 90 dias para mão de obra e 180 dias para peças, exceto desgaste natural.',
+      'A garantia não cobre mau uso, quedas, líquidos ou modificações não autorizadas.',
+      'Não nos responsabilizamos por dados/configurações perdidas durante o reparo. Recomendado fazer backup antes.',
+      'Valores e prazos podem ser ajustados após diagnóstico técnico detalhado (orçamento inicial é estimativa).',
+      'Equipamento não retirado após 30 dias pode estar sujeito a taxa de armazenamento (se aplicável).'
+    ],
     footerText: 'Documento gerado automaticamente pelo sistema iFix. Este documento não é uma nota fiscal.'
   };
+
+  function setConfig(overrides = {}) {
+    Object.assign(config, overrides);
+    return config;
+  }
 
   // ====================== ORDEM DE SERVIÇO ======================
   async function generateOrder(order, options = {}) {
@@ -102,7 +116,10 @@ export const PDFService = (() => {
       companyPhone,
       companyEmail,
       companyWebsite,
-      footerText
+      footerText,
+      terms,
+      technicianSignatureLabel,
+      clientSignatureLabel
     } = settings;
 
     const safe = FormatService.safeHTML;
@@ -144,6 +161,15 @@ export const PDFService = (() => {
           </tr>
         `).join('')
       : '<tr><td colspan="5" class="text-center text-muted">Nenhuma peça utilizada</td></tr>';
+
+    const termLines = [
+      ...(Array.isArray(terms) ? terms : []),
+      ...(Array.isArray(order.terms) ? order.terms : [])
+    ].filter(Boolean);
+
+    const termsHTML = termLines.length
+      ? termLines.map((t, idx) => `${idx + 1}. ${safe(t)}`).join('<br>')
+      : 'Sem termos adicionais.';
 
     return `
       <!DOCTYPE html>
@@ -367,22 +393,18 @@ export const PDFService = (() => {
           <!-- Termos e Condições -->
           <div class="terms">
             <strong>Termos e Condições:</strong><br>
-            1. O prazo de garantia é de 90 dias para mão de obra e 180 dias para peças, exceto desgaste natural.<br>
-            2. A garantia não cobre danos causados por mau uso, quedas, líquidos ou modificações não autorizadas.<br>
-            3. Após 30 dias da comunicação de que o aparelho está pronto, será cobrada taxa de armazenamento de R$ 5,00 por dia.<br>
-            4. Não nos responsabilizamos por dados e configurações perdidas durante o reparo. Faça backup antes.<br>
-            5. Orçamento sujeito a alteração após diagnóstico técnico detalhado.
+            ${termsHTML}
           </div>
           
           <!-- Assinaturas -->
           <div style="margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
             <div style="text-align: center;">
               <div style="border-top: 1px solid #000; width: 200px; margin: 20px auto 5px;"></div>
-              <small>Assinatura do Cliente</small>
+              <small>${safe(clientSignatureLabel || 'Assinatura do Cliente')}</small>
             </div>
             <div style="text-align: center;">
               <div style="border-top: 1px solid #000; width: 200px; margin: 20px auto 5px;"></div>
-              <small>Responsável Técnico</small>
+              <small>${safe(technicianSignatureLabel || 'Responsável Técnico')}</small>
             </div>
           </div>
           
@@ -684,6 +706,7 @@ export const PDFService = (() => {
   return {
     // Configuração
     config,
+    setConfig,
     
     // Ordem de Serviço
     generateOrder,
