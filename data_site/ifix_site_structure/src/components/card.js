@@ -1,11 +1,27 @@
-// card.js — card genérico melhorado
-window.Card = (function () {
-  const VERSION = "2.0.0";
+// card.js — Enhanced Card Component
+// Follows CSS guidelines from README (section 5.6)
+
+const Card = (function () {
+  const VERSION = "3.0.0";
   
-  function render({ 
-    title = "", 
-    subtitle = "", 
-    content = null, 
+  /**
+   * Render a Card component
+   * @param {Object} options
+   * @param {string} options.title - Card title
+   * @param {string} options.subtitle - Card subtitle
+   * @param {string|Node|Array<Node>} options.content - Main content
+   * @param {string|Node|Array<Node>} options.actions - Actions area (in header)
+   * @param {string|Node|Array<Node>} options.footer - Footer content
+   * @param {string} options.className - Additional CSS classes (e.g., "card--outline")
+   * @param {Function} options.onClick - Click handler for entire card
+   * @param {string} options.id - Card element ID
+   * @param {Object} options.data - Data attributes (key-value pairs)
+   * @returns {HTMLElement} The card DOM element
+   */
+  function render({
+    title = "",
+    subtitle = "",
+    content = null,
     actions = null,
     footer = null,
     className = "",
@@ -14,46 +30,63 @@ window.Card = (function () {
     data = {}
   } = {}) {
     const card = document.createElement("div");
-    card.className = `c-card ${className}`.trim();
+    card.className = `card ${className}`.trim();
     
     if (id) card.id = id;
-    if (onClick) {
+    
+    // Add click handler if provided
+    if (onClick && typeof onClick === "function") {
       card.style.cursor = "pointer";
       card.addEventListener("click", onClick);
     }
     
-    // Atributos de dados
+    // Add data attributes
     Object.entries(data).forEach(([key, value]) => {
       card.setAttribute(`data-${key}`, value);
     });
 
-    // Header
+    // --- Header ---
     const header = document.createElement("div");
-    header.className = "c-card__header";
-    header.innerHTML = `
-      <div class="c-card__titles">
-        ${title ? `<div class="c-card__title">${escapeHtml(title)}</div>` : ""}
-        ${subtitle ? `<div class="c-card__subtitle">${escapeHtml(subtitle)}</div>` : ""}
-      </div>
-      <div class="c-card__actions" data-card-actions></div>
-    `;
-
-    // Body
-    const body = document.createElement("div");
-    body.className = "c-card__body";
-    setContent(body, content);
-
-    // Actions
-    const actionsEl = header.querySelector("[data-card-actions]");
-    setContent(actionsEl, actions);
-
+    header.className = "card-header";
+    
+    // Titles container
+    const titlesContainer = document.createElement("div");
+    if (title) {
+      const titleEl = document.createElement("div");
+      titleEl.className = "card-title";
+      titleEl.textContent = title; // Safe: textContent
+      titlesContainer.appendChild(titleEl);
+    }
+    if (subtitle) {
+      const subtitleEl = document.createElement("div");
+      subtitleEl.className = "card-subtitle";
+      subtitleEl.textContent = subtitle; // Safe: textContent
+      titlesContainer.appendChild(subtitleEl);
+    }
+    header.appendChild(titlesContainer);
+    
+    // Actions area
+    if (actions) {
+      const actionsContainer = document.createElement("div");
+      actionsContainer.className = "card-actions";
+      setContent(actionsContainer, actions);
+      header.appendChild(actionsContainer);
+    }
+    
     card.appendChild(header);
-    card.appendChild(body);
 
-    // Footer (nova funcionalidade)
+    // --- Body ---
+    if (content !== null) {
+      const body = document.createElement("div");
+      body.className = "card-body";
+      setContent(body, content);
+      card.appendChild(body);
+    }
+
+    // --- Footer ---
     if (footer) {
       const footerEl = document.createElement("div");
-      footerEl.className = "c-card__footer";
+      footerEl.className = "card-footer";
       setContent(footerEl, footer);
       card.appendChild(footerEl);
     }
@@ -61,8 +94,14 @@ window.Card = (function () {
     return card;
   }
 
+  /**
+   * Safely set content into a container element
+   * @param {HTMLElement} targetEl - Container element
+   * @param {string|Node|Array<Node>} content - Content to insert
+   */
   function setContent(targetEl, content) {
     targetEl.innerHTML = "";
+    
     if (!content) return;
     
     if (Array.isArray(content)) {
@@ -71,7 +110,7 @@ window.Card = (function () {
           targetEl.appendChild(item);
         } else if (typeof item === "string") {
           const wrapper = document.createElement("div");
-          wrapper.innerHTML = item;
+          wrapper.textContent = item; // Safe: textContent
           targetEl.appendChild(wrapper);
         }
       });
@@ -83,20 +122,23 @@ window.Card = (function () {
       return;
     }
     
-    // HTML seguro (já escapado no conteúdo, não no wrapper)
+    // String content (safe via textContent)
     const wrapper = document.createElement("div");
-    wrapper.innerHTML = String(content);
+    wrapper.textContent = String(content);
     targetEl.appendChild(wrapper);
   }
 
-  function escapeHtml(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
-  return { 
+  return {
     render,
     version: VERSION
   };
 })();
+
+// Export for ES Modules
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = Card;
+} else if (typeof define === "function" && define.amd) {
+  define([], () => Card);
+} else {
+  window.Card = Card;
+}

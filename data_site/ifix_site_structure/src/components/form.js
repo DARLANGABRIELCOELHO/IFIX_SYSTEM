@@ -1,283 +1,427 @@
-// form.js — builder de formulário melhorado
+// form.js — Form Component for iFix Web App
+// Follows project principles and CSS guidelines from README
+
 window.Form = (function () {
-  function render({ 
-    fields = [], 
-    values = {}, 
-    onSubmit = null, 
-    submitLabel = "Salvar",
+  'use strict';
+
+  const VERSION = '2.0.0';
+
+  /**
+   * Main Form render function
+   * @param {Object} config - Form configuration
+   * @param {Array} config.fields - Array of field definitions
+   * @param {Object} config.values - Initial values for fields
+   * @param {Function} config.onSubmit - Submit callback
+   * @param {string} config.submitLabel - Submit button text
+   * @param {string} config.cancelLabel - Cancel button text (optional)
+   * @param {Function} config.onCancel - Cancel callback (optional)
+   * @param {boolean} config.liveValidation - Enable live validation
+   * @param {boolean} config.disabled - Disable entire form
+   * @param {boolean} config.loading - Show loading state
+   * @param {Function} config.validateService - External validation service (optional)
+   * @returns {HTMLFormElement} Form element
+   */
+  function render({
+    fields = [],
+    values = {},
+    onSubmit = null,
+    submitLabel = 'Salvar',
     cancelLabel = null,
     onCancel = null,
     liveValidation = false,
-    disabled = false
+    disabled = false,
+    loading = false,
+    validateService = null
   } = {}) {
-    const form = document.createElement("form");
-    form.className = "c-form";
-    form.setAttribute("autocomplete", "off");
-    if (disabled) form.classList.add("is-disabled");
+    const form = document.createElement('form');
+    form.className = 'form';
+    if (disabled) form.classList.add('is-disabled');
+    if (loading) form.classList.add('is-loading');
+    form.setAttribute('autocomplete', 'off');
 
-    const grid = document.createElement("div");
-    grid.className = "c-form__grid";
+    // Build form structure
+    form.appendChild(createFieldsContainer(fields, values, disabled));
+    form.appendChild(createActionsContainer(cancelLabel, onCancel, submitLabel, disabled || loading));
 
-    fields.forEach((f) => {
-      const field = buildField(f, values[f.name]);
-      if (f.disabled || disabled) {
-        const input = field.querySelector("input, select, textarea");
-        if (input) input.disabled = true;
-      }
-      grid.appendChild(field);
-    });
-
-    const actions = document.createElement("div");
-    actions.className = "c-form__actions";
-
-    // Botão de cancelar (opcional)
-    if (cancelLabel && typeof onCancel === "function") {
-      const cancelBtn = document.createElement("button");
-      cancelBtn.type = "button";
-      cancelBtn.className = "c-btn c-btn--secondary";
-      cancelBtn.textContent = cancelLabel;
-      cancelBtn.addEventListener("click", onCancel);
-      actions.appendChild(cancelBtn);
-    }
-
-    // Botão principal
-    const submitBtn = document.createElement("button");
-    submitBtn.type = "submit";
-    submitBtn.className = "c-btn c-btn--primary";
-    submitBtn.textContent = submitLabel;
-    if (disabled) submitBtn.disabled = true;
-    actions.appendChild(submitBtn);
-
-    form.appendChild(grid);
-    form.appendChild(actions);
-
-    // Validação em tempo real
-    if (liveValidation) {
-      form.addEventListener("input", debounce((e) => {
-        const fieldName = e.target.name;
-        const field = fields.find(f => f.name === fieldName);
-        if (field) {
-          const formData = getValues(form);
-          const validation = validateField(field, formData[fieldName], formData);
-          showFieldError(form, fieldName, validation);
-        }
-      }, 300));
-    }
-
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      if (disabled) return;
-
-      const payload = getValues(form);
-      const validation = validate(fields, payload);
-
-      clearErrors(form);
-      if (!validation.ok) {
-        showErrors(form, validation.errors);
-        return;
-      }
-
-      if (typeof onSubmit === "function") {
-        // Disabilita form durante submit
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Salvando...";
-        Promise.resolve(onSubmit(payload)).finally(() => {
-          submitBtn.disabled = false;
-          submitBtn.textContent = submitLabel;
-        });
-      }
-    });
+    // Setup form behavior
+    setupFormBehavior(form, fields, onSubmit, liveValidation, validateService);
 
     return form;
   }
 
-  function buildField(field, value) {
-    const wrap = document.createElement("div");
-    wrap.className = `c-form__field ${field.type || "text"}`;
-    if (field.span) wrap.style.gridColumn = `span ${field.span}`;
-    if (field.className) wrap.classList.add(field.className);
+  /**
+   * Create container for all form fields
+   */
+  function createFieldsContainer(fields, values, disabled) {
+    const container = document.createElement('div');
+    container.className = 'form-fields';
 
-    const label = document.createElement("label");
-    label.className = "c-form__label";
-    label.textContent = field.label ?? field.name;
-    if (field.required) label.innerHTML += ' <span class="c-form__required">*</span>';
+    fields.forEach(field => {
+      container.appendChild(createField(field, values[field.name], disabled));
+    });
 
-    const input = createInput(field, value);
-    input.classList.add("c-form__input");
-    input.setAttribute("name", field.name);
-    if (field.placeholder) input.setAttribute("placeholder", field.placeholder);
-    if (field.required) input.setAttribute("required", "true");
-    if (field.disabled) input.disabled = true;
-
-    const error = document.createElement("div");
-    error.className = "c-form__error";
-    error.setAttribute("data-error-for", field.name);
-
-    const help = document.createElement("div");
-    help.className = "c-form__help";
-    if (field.help) help.textContent = field.help;
-
-    wrap.appendChild(label);
-    wrap.appendChild(input);
-    wrap.appendChild(error);
-    if (field.help) wrap.appendChild(help);
-
-    return wrap;
+    return container;
   }
 
-  function createInput(field, value) {
-    const type = field.type ?? "text";
-    const name = field.name;
+  /**
+   * Create a single form field
+   */
+  function createField(fieldDef, value, formDisabled) {
+    const fieldGroup = document.createElement('div');
+    fieldGroup.className = 'form-group';
+
+    // Add span class if specified (for grid layout)
+    if (fieldDef.span) {
+      fieldGroup.classList.add(`form-group--span-${fieldDef.span}`);
+    }
+
+    // Add custom class if specified
+    if (fieldDef.className) {
+      fieldGroup.classList.add(fieldDef.className);
+    }
+
+    // Field label
+    const label = document.createElement('label');
+    label.className = 'form-label';
+    label.textContent = fieldDef.label || fieldDef.name;
+    if (fieldDef.required) {
+      const requiredSpan = document.createElement('span');
+      requiredSpan.className = 'form-required';
+      requiredSpan.textContent = ' *';
+      label.appendChild(requiredSpan);
+    }
+
+    // Input element
+    const input = createInputElement(fieldDef, value, formDisabled || fieldDef.disabled);
+
+    // Error container
+    const error = document.createElement('div');
+    error.className = 'form-error';
+    error.setAttribute('data-error-for', fieldDef.name);
+
+    // Help text
+    let helpText = null;
+    if (fieldDef.help) {
+      helpText = document.createElement('div');
+      helpText.className = 'form-help';
+      helpText.textContent = fieldDef.help;
+    }
+
+    // Assemble field
+    fieldGroup.appendChild(label);
+    fieldGroup.appendChild(input);
+    fieldGroup.appendChild(error);
+    if (helpText) fieldGroup.appendChild(helpText);
+
+    return fieldGroup;
+  }
+
+  /**
+   * Create input element based on field type
+   */
+  function createInputElement(fieldDef, value, isDisabled) {
+    const type = fieldDef.type || 'text';
 
     switch (type) {
-      case "select":
-        const sel = document.createElement("select");
-        (field.options ?? []).forEach((opt) => {
-          const o = document.createElement("option");
-          o.value = String(opt.value ?? opt);
-          o.textContent = String(opt.label ?? opt);
-          if (opt.disabled) o.disabled = true;
-          sel.appendChild(o);
+      case 'select':
+        const select = document.createElement('select');
+        (fieldDef.options || []).forEach(option => {
+          const opt = document.createElement('option');
+          opt.value = option.value !== undefined ? String(option.value) : String(option);
+          opt.textContent = option.label !== undefined ? String(option.label) : String(option);
+          if (option.disabled) opt.disabled = true;
+          select.appendChild(opt);
         });
-        if (value != null) sel.value = String(value);
-        return sel;
+        if (value !== undefined) select.value = String(value);
+        if (isDisabled) select.disabled = true;
+        if (fieldDef.placeholder) select.setAttribute('placeholder', fieldDef.placeholder);
+        return select;
 
-      case "textarea":
-        const ta = document.createElement("textarea");
-        ta.rows = field.rows ?? 4;
-        ta.cols = field.cols ?? 50;
-        if (value != null) ta.value = String(value);
-        return ta;
+      case 'textarea':
+        const textarea = document.createElement('textarea');
+        textarea.rows = fieldDef.rows || 4;
+        if (value !== undefined) textarea.value = String(value);
+        if (isDisabled) textarea.disabled = true;
+        if (fieldDef.placeholder) textarea.setAttribute('placeholder', fieldDef.placeholder);
+        return textarea;
 
-      case "checkbox":
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
+      case 'checkbox':
+        const container = document.createElement('div');
+        container.className = 'checkbox-wrapper';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
         checkbox.checked = Boolean(value);
-        return checkbox;
-
-      case "radio":
-        const container = document.createElement("div");
-        container.className = "c-form__radio-group";
-        (field.options ?? []).forEach((opt) => {
-          const label = document.createElement("label");
-          label.className = "c-form__radio-label";
-          
-          const input = document.createElement("input");
-          input.type = "radio";
-          input.name = name;
-          input.value = String(opt.value ?? opt);
-          if (String(value) === input.value) input.checked = true;
-          
-          const span = document.createElement("span");
-          span.textContent = String(opt.label ?? opt);
-          
-          label.appendChild(input);
-          label.appendChild(span);
-          container.appendChild(label);
-        });
+        if (isDisabled) checkbox.disabled = true;
+        
+        const checkboxLabel = document.createElement('label');
+        checkboxLabel.className = 'checkbox-label';
+        checkboxLabel.textContent = fieldDef.label || fieldDef.name;
+        
+        container.appendChild(checkbox);
+        container.appendChild(checkboxLabel);
         return container;
 
+      case 'radio':
+        const radioContainer = document.createElement('div');
+        radioContainer.className = 'radio-group';
+        
+        (fieldDef.options || []).forEach(option => {
+          const radioWrapper = document.createElement('label');
+          radioWrapper.className = 'radio-wrapper';
+          
+          const radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = fieldDef.name;
+          radio.value = String(option.value !== undefined ? option.value : option);
+          if (String(value) === radio.value) radio.checked = true;
+          if (isDisabled) radio.disabled = true;
+          
+          const radioLabel = document.createElement('span');
+          radioLabel.className = 'radio-label';
+          radioLabel.textContent = String(option.label !== undefined ? option.label : option);
+          
+          radioWrapper.appendChild(radio);
+          radioWrapper.appendChild(radioLabel);
+          radioContainer.appendChild(radioWrapper);
+        });
+        
+        return radioContainer;
+
       default:
-        const inp = document.createElement("input");
-        inp.type = type;
-        if (field.min) inp.min = field.min;
-        if (field.max) inp.max = field.max;
-        if (field.step) inp.step = field.step;
-        if (field.pattern) inp.pattern = field.pattern;
-        if (value != null) inp.value = String(value);
-        return inp;
+        const input = document.createElement('input');
+        input.type = type;
+        input.className = 'form-control';
+        input.name = fieldDef.name;
+        
+        if (value !== undefined) input.value = String(value);
+        if (isDisabled) input.disabled = true;
+        if (fieldDef.placeholder) input.setAttribute('placeholder', fieldDef.placeholder);
+        if (fieldDef.required) input.required = true;
+        if (fieldDef.pattern) input.pattern = fieldDef.pattern;
+        if (fieldDef.min !== undefined) input.min = fieldDef.min;
+        if (fieldDef.max !== undefined) input.max = fieldDef.max;
+        if (fieldDef.step !== undefined) input.step = fieldDef.step;
+        
+        return input;
     }
   }
 
-  function getValues(formEl) {
+  /**
+   * Create form actions container (buttons)
+   */
+  function createActionsContainer(cancelLabel, onCancel, submitLabel, isDisabled) {
+    const actions = document.createElement('div');
+    actions.className = 'form-actions';
+
+    // Cancel button (optional)
+    if (cancelLabel && typeof onCancel === 'function') {
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'btn btn--secondary';
+      cancelBtn.textContent = cancelLabel;
+      cancelBtn.addEventListener('click', onCancel);
+      actions.appendChild(cancelBtn);
+    }
+
+    // Submit button
+    const submitBtn = document.createElement('button');
+    submitBtn.type = 'submit';
+    submitBtn.className = 'btn btn--primary';
+    submitBtn.textContent = submitLabel;
+    if (isDisabled) submitBtn.disabled = true;
+    actions.appendChild(submitBtn);
+
+    return actions;
+  }
+
+  /**
+   * Setup form event handlers and validation
+   */
+  function setupFormBehavior(form, fields, onSubmit, liveValidation, validateService) {
+    // Live validation (with debounce)
+    if (liveValidation) {
+      form.addEventListener('input', debounce((e) => {
+        const fieldName = e.target.name || e.target.getAttribute('name');
+        if (!fieldName) return;
+        
+        const field = fields.find(f => f.name === fieldName);
+        if (!field) return;
+        
+        const formData = getValues(form);
+        const validation = validateField(field, formData[fieldName], formData, validateService);
+        showFieldError(form, fieldName, validation);
+      }, 300));
+    }
+
+    // Form submission
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Check if form is disabled
+      if (form.classList.contains('is-disabled')) return;
+      
+      // Set loading state
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Salvando...';
+      
+      try {
+        // Get form values
+        const formData = getValues(form);
+        
+        // Validate all fields
+        clearErrors(form);
+        const validation = validateForm(fields, formData, validateService);
+        
+        if (!validation.ok) {
+          showErrors(form, validation.errors);
+          return;
+        }
+        
+        // Call onSubmit if provided
+        if (typeof onSubmit === 'function') {
+          await Promise.resolve(onSubmit(formData));
+        }
+      } finally {
+        // Restore button state
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
+    });
+  }
+
+  /**
+   * Get form values as plain object
+   */
+  function getValues(form) {
     const data = {};
-    const fd = new FormData(formEl);
+    const formData = new FormData(form);
     
-    for (const [k, v] of fd.entries()) {
-      // Para checkboxes boolean
-      if (formEl.querySelector(`[name="${k}"][type="checkbox"]`)) {
-        data[k] = v === "on";
+    for (const [key, value] of formData.entries()) {
+      // Handle checkboxes
+      const input = form.querySelector(`[name="${key}"]`);
+      if (input && input.type === 'checkbox') {
+        data[key] = value === 'on';
       } else {
-        data[k] = v;
+        data[key] = value;
       }
     }
     
     return data;
   }
 
-  function validate(fields, values) {
-    const errors = {};
-    
-    fields.forEach((f) => {
-      const v = values[f.name];
-      const error = validateField(f, v, values);
-      if (error) errors[f.name] = error;
-    });
-
-    return { ok: Object.keys(errors).length === 0, errors };
-  }
-
-  function validateField(field, value, allValues) {
-    const v = String(value ?? "").trim();
-    
-    if (field.required && v === "") {
-      return "Campo obrigatório.";
+  /**
+   * Validate a single field
+   */
+  function validateField(field, value, allValues, validateService) {
+    // Use external validation service if provided
+    if (validateService && typeof validateService.validateField === 'function') {
+      return validateService.validateField(field, value, allValues);
     }
     
-    if (typeof field.validate === "function") {
-      return field.validate(value, allValues);
+    // Default validation
+    const v = String(value || '').trim();
+    
+    if (field.required && !v) {
+      return 'Campo obrigatório.';
     }
     
     if (field.pattern && v && !new RegExp(field.pattern).test(v)) {
-      return field.errorMessage || "Formato inválido.";
+      return field.errorMessage || 'Formato inválido.';
     }
     
-    if (field.type === "email" && v && !/\S+@\S+\.\S+/.test(v)) {
-      return "Email inválido.";
+    if (field.type === 'email' && v && !/\S+@\S+\.\S+/.test(v)) {
+      return 'Email inválido.';
+    }
+    
+    if (typeof field.validate === 'function') {
+      return field.validate(value, allValues);
     }
     
     return null;
   }
 
-  function clearErrors(formEl) {
-    formEl.querySelectorAll("[data-error-for]").forEach((el) => {
-      el.textContent = "";
-      el.previousElementSibling?.classList.remove("has-error");
-    });
-  }
-
-  function showFieldError(formEl, fieldName, error) {
-    const err = formEl.querySelector(`[data-error-for="${cssEscape(fieldName)}"]`);
-    const input = formEl.querySelector(`[name="${cssEscape(fieldName)}"]`);
+  /**
+   * Validate entire form
+   */
+  function validateForm(fields, values, validateService) {
+    const errors = {};
     
-    if (err) err.textContent = error || "";
-    if (input) input.classList.toggle("has-error", !!error);
-  }
-
-  function showErrors(formEl, errors) {
-    Object.entries(errors).forEach(([name, msg]) => {
-      showFieldError(formEl, name, msg);
+    fields.forEach(field => {
+      const error = validateField(field, values[field.name], values, validateService);
+      if (error) errors[field.name] = error;
     });
-  }
-
-  function debounce(fn, delay) {
-    let timeout;
-    return (...args) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => fn(...args), delay);
+    
+    return {
+      ok: Object.keys(errors).length === 0,
+      errors
     };
   }
 
-  function cssEscape(str) {
-    return String(str ?? "").replaceAll('"', '\\"');
+  /**
+   * Clear all errors in form
+   */
+  function clearErrors(form) {
+    form.querySelectorAll('[data-error-for]').forEach(el => {
+      el.textContent = '';
+    });
+    form.querySelectorAll('.has-error').forEach(el => {
+      el.classList.remove('has-error');
+    });
   }
 
-  return { 
-    render, 
-    getValues, 
-    validate,
+  /**
+   * Show error for a specific field
+   */
+  function showFieldError(form, fieldName, error) {
+    const errorEl = form.querySelector(`[data-error-for="${fieldName}"]`);
+    const input = form.querySelector(`[name="${fieldName}"]`);
+    
+    if (errorEl) errorEl.textContent = error || '';
+    if (input) input.classList.toggle('has-error', !!error);
+  }
+
+  /**
+   * Show multiple errors
+   */
+  function showErrors(form, errors) {
+    Object.entries(errors).forEach(([fieldName, error]) => {
+      showFieldError(form, fieldName, error);
+    });
+  }
+
+  /**
+   * Utility: debounce function
+   */
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  /**
+   * Utility: escape HTML for data attributes
+   */
+  function cssEscape(str) {
+    return String(str || '').replace(/"/g, '\\"');
+  }
+
+  // Public API
+  return {
+    render,
+    getValues,
+    validate: validateForm,
     validateField,
     clearErrors,
-    showErrors
+    showErrors,
+    version: VERSION
   };
 })();
